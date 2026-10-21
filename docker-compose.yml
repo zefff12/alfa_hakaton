@@ -1,0 +1,101 @@
+# Умный кредитный кабинет предпринимателя — запуск всех компонентов одной командой:
+#   docker compose up --build              → http://localhost:8080
+#   docker compose --profile llm up --build → + локальная open-weights LLM для Альфика
+name: alfa-credit
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-credit}:${POSTGRES_PASSWORD:-credit}@db:5432/${POSTGRES_DB:-credit}
+  JWT_SECRET: ${JWT_SECRET:-change-me-in-production-please-32b}
+  EGRUL_URL: http://mocks:8090/egrul
+  FNS_URL: http://mocks:8090/fns
+  BKI_URL: http://mocks:8090/bki
+  PIPELINE_STEP_DELAY_S: ${PIPELINE_STEP_DELAY_S:-2.5}
+  AUTO_DECISION_LIMIT: ${AUTO_DECISION_LIMIT:-10000000}
+  LLM_ENABLED: ${LLM_ENABLED:-false}
+  LLM_URL: http://ollama:11434
+  LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+  CORS_ORIGINS: http://localhost:8080
+  SEED_DEMO_DATA: "true"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-credit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-credit}
+      POSTGRES_DB: ${POSTGRES_DB:-credit}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-credit}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mocks:
+    build: ./mocks
+    environment:
+      MOCK_FAILURE_RATE: ${MOCK_FAILURE_RATE:-0}
+      MOCK_LATENCY_MS: ${MOCK_LATENCY_MS:-300}
+    ports:
+      - "8090:8090"
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    environment: *backend-env
+    depends_on:
+      db: { condition: service_healthy }
+      mocks: { condition: service_started }
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "app.worker"]
+    environment: *backend-env
+    depends_on:
+      db: { condition: service_healthy }
+      api: { condition: service_healthy }
+    volumes:
+      - storage:/data/storage
+    # Воркеры масштабируются горизонтально: docker compose up --scale worker=3
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    depends_on:
+      api: { condition: service_healthy }
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # --- Опционально: локальная LLM с открытыми весами (Qwen2.5, Apache-2.0) ---
+  ollama:
+    image: ollama/ollama:0.6.8
+    profiles: ["llm"]
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  ollama-pull:
+    image: ollama/ollama:0.6.8
+    profiles: ["llm"]
+    depends_on: [ollama]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "sleep 5 && ollama pull ${LLM_MODEL:-qwen2.5:3b}"]
+    restart: "no"
+
+volumes:
+  pgdata:
+  storage:
+  ollama:

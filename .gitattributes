@@ -1,0 +1,4 @@
+# Единые окончания строк (LF) — конфиги корректно работают в Linux-контейнерах при клоне на Windows
+* text=auto eol=lf
+*.png binary
+*.jpg binary
