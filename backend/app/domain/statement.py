@@ -82,6 +82,7 @@ def parse_1c(text: str) -> Parsed:
     if m:
         own = m.group(1)
     p = Parsed("1c", account=own)
+    owner_inns: dict[str, int] = {}
     for block in re.findall(r"СекцияДокумент=.*?КонецДокумента", text, re.DOTALL):
         f = dict(re.findall(r"^([^=\r\n]+)=(.*?)\r?$", block, re.MULTILINE))
         amount = _num(f.get("Сумма"))
@@ -97,8 +98,12 @@ def parse_1c(text: str) -> Parsed:
         if incoming and own and payer_acc and f.get("ПлательщикИНН") and f.get("ПлательщикИНН") == f.get("ПолучательИНН"):
             tx.excluded = "перевод между своими счетами"
         p.txs.append(tx)
+        if incoming and f.get("ПолучательИНН"):
+            owner_inns[f["ПолучательИНН"].strip()] = owner_inns.get(f["ПолучательИНН"].strip(), 0) + 1
     if not p.txs:
         raise StatementError("В файле 1С не найдено операций")
+    # Владелец счёта — получатель входящих платежей (нужен для проверки «чужая выписка»)
+    p.owner = max(owner_inns, key=owner_inns.get) if owner_inns else None
     return p
 
 
@@ -207,6 +212,7 @@ def analyze(p: Parsed, declared_monthly_revenue: float | None = None,
     return {
         "format": p.fmt,
         "account": p.account,
+        "owner_inn": p.owner,
         "period_from": min(t.day for t in p.txs).isoformat(),
         "period_to": max(t.day for t in p.txs).isoformat(),
         "transactions": len(p.txs),

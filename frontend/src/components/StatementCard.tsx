@@ -106,12 +106,23 @@ const SAMPLES = [
   { file: "vypiska_flora_1c.txt", label: t("ИП Смирнова — 1С") },
 ];
 
+/** Выписки с заранее заложенными ошибками — чтобы показать проверку документов Альфиком. */
+export const ERROR_SAMPLES = [
+  { file: "vypiska_oshibka_chuzhaya_1c.txt", label: t("Ошибка: выписка чужой компании") },
+  { file: "vypiska_oshibka_nizkie_oboroty_1c.txt", label: t("Ошибка: обороты ниже анкеты") },
+  { file: "vypiska_oshibka_2_mesyaca_1c.txt", label: t("Ошибка: только 2 месяца") },
+];
+
 export function SampleStatements() {
   return (
     <details className="small">
       <summary>{t("Нет выписки под рукой? Скачайте синтетический пример")}</summary>
       <div className="chips mt">
         {SAMPLES.map((s) => <a key={s.file} className="chip" href={`/samples/${s.file}`} download>{s.label}</a>)}
+      </div>
+      <p className="muted mt">{t("Примеры с ошибками — Альфик найдёт несоответствия:")}</p>
+      <div className="chips mt">
+        {ERROR_SAMPLES.map((s) => <a key={s.file} className="chip" href={`/samples/${s.file}`} download>{s.label}</a>)}
       </div>
       <p className="muted mt">{t("Выгрузку в формате 1С «Клиент-Банк» можно получить в любом интернет-банке: «Выписка → Экспорт в 1С».")}</p>
     </details>

@@ -85,17 +85,18 @@ def test_info_request_then_underwriter(client):
                     files={"file": ("statement.pdf", io.BytesIO(b"%PDF-1.4 demo"), "application/pdf")}, headers=h)
     assert r.status_code == 201, r.text
     app = r.json()
-    r = client.post(f"/api/applications/{app['id']}/resubmit", json={"version": app["version"]}, headers=h)
-    assert r.status_code == 200
+    # все запрошенные документы на месте — заявка сама продолжила путь, без кнопки «Отправить повторно»
+    assert app["status"] == "SUBMITTED"
+    assert any("автоматически" in e["message"] for e in app["timeline"])
     run_pipeline(app["id"])
     app = client.get(f"/api/applications/{app['id']}", headers=h).json()
-    # налоговый долг 64 тыс. → банк просит справку
+    # налоговый долг 64 тыс. → банк просит справку; шкала показывает задачу на этапе финпоказателей
     assert app["status"] == "INFO_REQUESTED"
     assert {d["code"] for d in app["requested_documents"]} == {"tax_certificate"}
+    assert [s["state"] for s in app["steps"]][:3] == ["done", "done", "attention"]
+    assert app["tasks"][0]["code"] == "tax_certificate" and not app["tasks"][0]["done"]
     client.post(f"/api/applications/{app['id']}/documents", data={"doc_type": "tax_certificate"},
                 files={"file": ("tax.pdf", io.BytesIO(b"%PDF tax"), "application/pdf")}, headers=h)
-    app = client.get(f"/api/applications/{app['id']}", headers=h).json()
-    client.post(f"/api/applications/{app['id']}/resubmit", json={"version": app["version"]}, headers=h)
     run_pipeline(app["id"])
     app = client.get(f"/api/applications/{app['id']}", headers=h).json()
     assert app["status"] == "MANUAL_REVIEW"  # 15 млн > лимита автоматического решения

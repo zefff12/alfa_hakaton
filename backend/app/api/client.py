@@ -10,12 +10,13 @@ from app.domain.decision import offer_rate
 from app.domain.products import DOCUMENT_TYPES, PRODUCTS, PURPOSES, get_product
 from app.integrations import clients
 from app.models import Application, ChatMessage, Document, Notification, User
-from app.schemas import (AcceptOfferRequest, AdvisorRequest, ApplicationAction, ApplicationCreate, ApplicationUpdate, IntakeCreateRequest, IntakeRequest,
+from app.schemas import (AcceptOfferRequest, AdvisorRequest, ApplicationAction, ApplicationCreate, ApplicationUpdate, IntakeCreateRequest, IntakeRequest, FixRequest, MatchProfileUpdate, OfferApplyRequest, SwipeRequest,
                          CalcRequest, ChatMessageOut, ChatRequest, EgrulLookupOut, FeedReaction, NotificationOut,
                          PrecheckRequest, SignRequest)
 from app.security import current_user, require_client
 from app.services import applications as svc
 from app.services import assistant, feed, intake
+from app.services import match as match_svc
 
 router = APIRouter(prefix="/api", tags=["Кабинет клиента"])
 
@@ -175,6 +176,97 @@ def intake_create(req: IntakeCreateRequest, user: User = Depends(require_client)
     if not (req.state.get("fields") or {}).get("amount"):
         raise HTTPException(422, "Сначала расскажите, сколько денег нужно")
     return svc.serialize(intake.create_application(db, user, req.state, req.product_code))
+
+
+# --- «Кредитный подбор»: свайпы, избранное, сравнение ---------------------------
+
+@router.get("/match", tags=["Кредитный подбор"], summary="Колода предложений с учётом приоритетов и свайпов")
+def match_deck(user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return match_svc.deck(db, user)
+
+
+@router.put("/match/profile", tags=["Кредитный подбор"], summary="Изменить параметры подбора")
+def match_profile(req: MatchProfileUpdate, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    match_svc.save_profile(db, user, req.model_dump())
+    return match_svc.deck(db, user)
+
+
+@router.post("/match/swipe", tags=["Кредитный подбор"], summary="Свайп: вправо — в избранное, влево — пропустить")
+def match_swipe(req: SwipeRequest, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return match_svc.swipe(db, user, req.product_code, req.action)
+
+
+@router.get("/favorites", tags=["Кредитный подбор"], summary="Избранные предложения")
+def favorites_list(user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return match_svc.favorites(db, user)
+
+
+@router.post("/favorites/{code}", status_code=201, tags=["Кредитный подбор"], summary="Добавить в избранное")
+def favorites_add(code: str, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    match_svc.add_favorite(db, user, code)
+    return match_svc.favorites(db, user)
+
+
+@router.delete("/favorites/{code}", tags=["Кредитный подбор"], summary="Убрать из избранного")
+def favorites_remove(code: str, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    match_svc.remove_favorite(db, user, code)
+    return match_svc.favorites(db, user)
+
+
+@router.delete("/favorites", tags=["Кредитный подбор"], summary="Очистить избранное")
+def favorites_clear(user: User = Depends(require_client), db: Session = Depends(get_db)):
+    match_svc.remove_favorite(db, user, None)
+    return match_svc.favorites(db, user)
+
+
+@router.post("/favorites/{code}/compare", tags=["Кредитный подбор"], summary="Включить/исключить из сравнения")
+def favorites_compare_toggle(code: str, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    match_svc.toggle_compare(db, user, code)
+    return match_svc.favorites(db, user)
+
+
+@router.get("/compare", tags=["Кредитный подбор"], summary="Сравнение предложений")
+def compare(codes: str | None = None, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return match_svc.compare(db, user, [c for c in (codes or "").split(",") if c] or None)
+
+
+@router.get("/offers/{code}", tags=["Кредитный подбор"], summary="Подробнее о предложении")
+def offer_detail(code: str, amount: int | None = None, term: int | None = None,
+                 user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return match_svc.detail(db, user, code, amount, term)
+
+
+@router.post("/offers/{code}/apply", status_code=201, tags=["Кредитный подбор"], summary="Оформить заявку по предложению")
+def offer_apply(code: str, req: OfferApplyRequest, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return svc.serialize(match_svc.apply(db, user, code, req.amount, req.term_months))
+
+
+# --- Проверка документов и анкеты ---------------------------------------------
+
+@router.get("/applications/{app_id}/checks", tags=["Документы"], summary="Проверка документов и анкеты на несоответствия")
+def app_checks(app_id: int, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    return svc.checks(svc.get_owned(db, user, app_id))
+
+
+@router.post("/applications/{app_id}/fix", tags=["Документы"], summary="Исправить анкету по подсказке Альфика")
+def app_fix(app_id: int, req: FixRequest, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    app = svc.apply_fix(db, user, svc.get_owned(db, user, app_id), req.field, req.value)
+    return {"application": svc.serialize(app), "checks": svc.checks(app)}
+
+
+@router.get("/me/capacity", tags=["Кабинет клиента"], summary="«Мои возможности»: предварительная сумма")
+def capacity(user: User = Depends(require_client), db: Session = Depends(get_db)):
+    last = db.scalar(select(Application).where(Application.company_id == user.company_id, Application.decision.is_not(None))
+                     .order_by(Application.updated_at.desc()))
+    limit = ((last.decision or {}).get("limit") if last else None)
+    if limit:
+        return {"amount": int(limit), "source": "scoring"}
+    try:
+        revenue = float(clients.fetch_fns(user.company.inn).get("annual_revenue") or 0)
+    except clients.IntegrationError:
+        return {"amount": None, "source": None}
+    # Ориентир по обороту: четверть годовой выручки, не выше 10 млн — до проверки кредитной истории
+    return {"amount": int(min(10_000_000, revenue * 0.25) // 100_000 * 100_000), "source": "fns"}
 
 
 @router.get("/assistant/history", response_model=list[ChatMessageOut], tags=["Альфик"], summary="История диалога")

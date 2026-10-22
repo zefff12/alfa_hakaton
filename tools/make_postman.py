@@ -45,6 +45,14 @@ scenario = [
     req("3. Каковы мои шансы?", "POST", "/api/precheck",
         {"product_code": "WORKING", "amount": 3000000, "term_months": 24, "business_age_months": 90,
          "monthly_revenue": 4500000, "monthly_expenses": 3600000, "existing_monthly_payments": 180000}),
+    req("3a. Кредитный подбор: что важнее", "PUT", "/api/match/profile",
+        {"purpose": "working_capital", "amount": 3000000, "term_months": 24, "priority": "cost", "reset_swipes": True},
+        ["pm.test('первым — оборотный кредит', () => pm.expect(pm.response.json().deck[0].code).to.eql('WORKING'));"]),
+    req("3b. Свайп вправо — в избранное", "POST", "/api/match/swipe", {"product_code": "WORKING", "action": "like"}),
+    req("3c. Ещё одно предложение в избранное", "POST", "/api/favorites/EXPRESS"),
+    req("3d. Сравнение избранного", "GET", "/api/compare", None,
+        ["pm.test('две колонки', () => pm.expect(pm.response.json().columns.length).to.eql(2));"]),
+    req("3e. Подробнее о предложении", "GET", "/api/offers/WORKING?amount=3000000&term=24"),
     req("4. Создать черновик", "POST", "/api/applications",
         {"product_code": "WORKING", "purpose": "working_capital", "amount": 3000000, "term_months": 24},
         ["pm.test('201', () => pm.response.to.have.status(201));",
@@ -52,6 +60,8 @@ scenario = [
     req("5. Заполнить анкету и согласия", "PATCH", "/api/applications/{{appId}}",
         {"form_data": {"monthly_revenue": 4500000, "monthly_expenses": 3600000, "existing_payments": 180000},
          "consents": {"bki": True, "personal_data": True}}),
+    req("5a. Проверка документов и анкеты Альфиком", "GET", "/api/applications/{{appId}}/checks", None,
+        ["pm.test('есть итог', () => pm.expect(pm.response.json().summary.level).to.be.oneOf(['ok','warn','error']));"]),
     req("6. Отправить заявку", "POST", "/api/applications/{{appId}}/submit", {},
         ["pm.test('SUBMITTED', () => pm.expect(pm.response.json().status).to.eql('SUBMITTED'));"]),
     req("7. Статус (повторять ~10 сек до APPROVED)", "GET", "/api/applications/{{appId}}", None,
@@ -74,7 +84,7 @@ scenario = [
 all_items = []
 for path, ops in spec["paths"].items():
     for method, op in ops.items():
-        p = path.replace("{app_id}", "{{appId}}").replace("{doc_id}", "1").replace("{inn}", "7701234561")
+        p = path.replace("{app_id}", "{{appId}}").replace("{doc_id}", "1").replace("{inn}", "7701234561").replace("{code}", "WORKING")
         auth = "{{uwToken}}" if path.startswith("/api/bank") else "{{token}}"
         all_items.append(req(f"{method.upper()} {path} — {op.get('summary', '')}", method.upper(), p, auth=auth))
 

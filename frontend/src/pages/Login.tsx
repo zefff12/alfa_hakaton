@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
-import { ALFIK, ErrorBox, Field } from "../components/ui";
+import { ErrorBox, Field } from "../components/ui";
 import { t } from "../i18n";
 import LangSwitch from "../components/LangSwitch";
 
@@ -31,14 +31,14 @@ export default function Login() {
     <div className="login-page">
       <div className="login-left">
         <div>
-          <div className="row" style={{ marginBottom: 32 }}>
-            <div className="brand-mark" style={{ background: "#fff", color: "var(--red)" }}>{t("А")}</div>
-            <b style={{ fontSize: 18 }}>{t("Умный кредитный кабинет")}</b>
+          <div className="logo" style={{ padding: "0 0 32px" }}>
+            <b style={{ fontSize: 30 }}>{t("Альфа Банк")}</b><i />
+            <small>{t("Умный кредитный кабинет")}</small>
           </div>
           <h1>{t("Кредит для бизнеса — понятно, быстро и с помощником")}</h1>
           <p>{t("Альфик подберёт продукт под вашу задачу, оценит шансы до подачи, заполнит реквизиты из ЕГРЮЛ и расскажет, что происходит с заявкой на каждом этапе.")}</p>
         </div>
-        <img src={ALFIK.wave} alt={t("Альфик")} className="bob" />
+        <img src="/brand/alfik-jump.webp" alt={t("Альфик")} className="bob" />
       </div>
       <div className="login-right">
         <div className="row between" style={{ marginBottom: 22 }}>

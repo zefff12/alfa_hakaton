@@ -2,14 +2,14 @@
 import hashlib
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.domain import calculator, statement
+from app.domain import calculator, doccheck, statement
 from app.domain.decision import build_offer
 from app.domain.products import DOCUMENT_TYPES, PURPOSES, get_product, required_documents_for
 from app.domain.state_machine import FINAL, LABELS, Actor, Status, TransitionError, allowed_targets
@@ -33,6 +33,8 @@ TRACK_OF = {
 
 
 def _iso(dt: datetime | None) -> str | None:
+    if dt and dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)  # SQLite не хранит часовой пояс, время в базе — UTC
     return dt.isoformat() if dt else None
 
 
@@ -87,6 +89,8 @@ def serialize(app: Application, *, for_bank: bool = False) -> dict:
         ],
         "track": {"steps": [label for _, label in CLIENT_TRACK], "current": TRACK_OF.get(app.status, 0)},
         "statement": latest_statement(app),
+        "steps": build_steps(app),
+        "tasks": build_tasks(app),
         "alfik": stage,
         "allowed_transitions": allowed_targets(app.status, actor),
         "company": {
@@ -204,7 +208,7 @@ def submit(db: Session, user: User, app: Application, version: int | None) -> Ap
 
 
 def resubmit(db: Session, user: User, app: Application, version: int | None, comment: str | None) -> Application:
-    missing = [d for d in app.requested_documents or [] if d not in pipeline.provided_doc_types(app)]
+    missing = [d for d in app.requested_documents or [] if d not in usable_doc_types(app)]
     if missing:
         raise HTTPException(422, {"message": "Загрузите запрошенные документы",
                                   "errors": [doc_label(d) for d in missing]})
@@ -282,7 +286,139 @@ async def upload_document(db: Session, user: User, app: Application, doc_type: s
         analyze_statement(db, app, doc, content)
     db.commit()
     db.refresh(app)
+    _auto_resubmit(db, user, app)
     return doc
+
+
+def usable_doc_types(app: Application) -> set[str]:
+    """Загруженные документы, которые закрывают запрос банка (выписка чужой компании — не закрывает)."""
+    types = set()
+    for d in app.documents:
+        if d.status == "REJECTED":
+            continue
+        owner = ((d.analysis.data or {}).get("owner_inn") if d.analysis and d.analysis.status == "PARSED" else None)
+        if d.doc_type == "bank_statement" and owner and owner != app.company.inn:
+            continue
+        types.add(d.doc_type)
+    return types
+
+
+def _auto_resubmit(db: Session, user: User, app: Application) -> None:
+    """Все запрошенные документы на месте — заявка сама продолжает путь, клиенту ничего нажимать не нужно."""
+    if app.status != Status.INFO_REQUESTED.value or not app.requested_documents:
+        return
+    if any(d not in usable_doc_types(app) for d in app.requested_documents):
+        return
+    pipeline.transition(db, app, Status.SUBMITTED, actor=Actor.CLIENT, actor_id=user.id,
+                        message="Все запрошенные документы загружены — заявка автоматически отправлена дальше")
+    app.requested_documents = []
+    db.commit()
+    db.refresh(app)
+
+
+def checks(app: Application) -> dict:
+    items = doccheck.run(app, latest_statement(app), usable_doc_types(app))
+    return {"items": items, "summary": doccheck.summary(items)}
+
+
+FIXABLE_FIELDS = {"monthly_revenue", "monthly_expenses", "existing_payments"}
+FIX_LABELS = {"monthly_revenue": "выручка", "monthly_expenses": "расходы", "existing_payments": "платежи по кредитам"}
+
+
+def apply_fix(db: Session, user: User, app: Application, field: str, value: float) -> Application:
+    if field not in FIXABLE_FIELDS:
+        raise HTTPException(422, "Это поле нельзя исправить автоматически")
+    if Status(app.status) not in (Status.DRAFT, Status.INFO_REQUESTED):
+        raise HTTPException(409, "Данные анкеты можно исправить только до рассмотрения заявки")
+    old = (app.form_data or {}).get(field)
+    app.form_data = {**(app.form_data or {}), field: value}
+    app.version += 1
+    pipeline.log_event(db, app, "FORM_FIXED", f"Клиент исправил анкету по подсказке Альфика: {FIX_LABELS[field]}",
+                       actor=Actor.CLIENT, actor_id=user.id, payload={"field": field, "old": old, "new": value})
+    db.commit()
+    return app
+
+
+STEP_TITLES = [
+    ("form", "Анкета заполнена"),
+    ("data", "Данные проверены"),
+    ("finance", "Проверка финансовых показателей"),
+    ("decision", "Решение банка"),
+    ("signing", "Подписание договора"),
+    ("money", "Деньги на счёте"),
+]
+STEP_ORDER = {
+    "DRAFT": 0, "SUBMITTED": 1, "DATA_CHECK": 1, "ENRICHMENT": 1, "SCORING": 2, "MANUAL_REVIEW": 2,
+    "APPROVED": 4, "COUNTER_OFFER": 4, "SIGNING": 4, "ISSUING": 5, "DISBURSED": 6, "REJECTED": 3, "CANCELLED": 0,
+}
+STEP_DETAIL = {
+    "form": ("Заполните анкету и отправьте заявку", "Проверка пройдена"),
+    "data": ("Проверяем полноту данных и запрашиваем ЕГРЮЛ, ФНС, БКИ", "Все сведения получены"),
+    "finance": ("Оцениваем выручку, нагрузку и риск", "Анализ завершён"),
+    "decision": ("После проверки всех данных", "Решение принято"),
+    "signing": ("Подпишите договор кодом в кабинете", "Договор подписан"),
+    "money": ("Перечисляем средства на расчётный счёт", "Средства зачислены"),
+}
+STEP_OF_STATUS = {"SUBMITTED": "form", "DATA_CHECK": "data", "ENRICHMENT": "data", "SCORING": "finance",
+                  "MANUAL_REVIEW": "finance", "APPROVED": "decision", "COUNTER_OFFER": "decision",
+                  "REJECTED": "decision", "SIGNING": "signing", "ISSUING": "money", "DISBURSED": "money"}
+
+
+def build_steps(app: Application) -> list[dict]:
+    """Шкала заявки: что сделано, что идёт сейчас и что дальше — с отметками времени."""
+    status = app.status
+    current = STEP_ORDER.get(status, 0)
+    attention = None
+    if status == Status.INFO_REQUESTED.value:
+        from_scoring = (app.decision or {}).get("outcome") == "INFO_REQUESTED"
+        current, attention = (2, "finance") if from_scoring else (1, "data")
+    if status == Status.CANCELLED.value:
+        current = STEP_ORDER.get(_last_active(app), 0)
+    first_at: dict[str, str] = {}
+    for e in app.events:
+        key = STEP_OF_STATUS.get(e.to_status or "")
+        if key and key not in first_at:
+            first_at[key] = _iso(e.created_at)
+    steps = []
+    for i, (key, title) in enumerate(STEP_TITLES):
+        todo, done_text = STEP_DETAIL[key]
+        if status == Status.REJECTED.value and key == "decision":
+            state, detail = "failed", "Банк не смог одобрить кредит"
+        elif key == attention:
+            state, detail = "attention", "Нужны документы — задача ниже"
+        elif i < current:
+            state, detail = "done", done_text
+        elif status == Status.CANCELLED.value:
+            state, detail = "skipped", "Заявка отменена"
+        elif i == current and status not in (Status.DISBURSED.value, Status.REJECTED.value):
+            state, detail = "active", ("Рассматривает кредитный специалист" if status == "MANUAL_REVIEW" else todo)
+        else:
+            state, detail = "pending", todo
+        steps.append({"key": key, "title": title, "state": state, "detail": detail, "at": first_at.get(key)})
+    return steps
+
+
+def _last_active(app: Application) -> str:
+    for e in reversed(app.events):
+        if e.to_status and e.to_status != Status.CANCELLED.value:
+            return e.to_status
+    return "DRAFT"
+
+
+def build_tasks(app: Application) -> list[dict]:
+    """Конкретные задачи клиенту внутри кабинета."""
+    usable = usable_doc_types(app)
+    tasks = []
+    if app.status == Status.INFO_REQUESTED.value:
+        for code in app.requested_documents or []:
+            tasks.append({"type": "upload", "code": code, "title": f"Загрузите: {doc_label(code)}", "done": code in usable})
+    elif app.status in (Status.APPROVED.value, Status.COUNTER_OFFER.value):
+        tasks.append({"type": "offer", "title": "Выберите вариант условий и примите предложение", "done": False})
+    elif app.status == Status.SIGNING.value:
+        tasks.append({"type": "sign", "title": "Подпишите договор кодом подтверждения", "done": False})
+    elif app.status == Status.DRAFT.value:
+        tasks.append({"type": "submit", "title": "Заполните анкету и отправьте заявку", "done": False})
+    return tasks
 
 
 def analyze_statement(db: Session, app: Application, doc: Document, content: bytes) -> DocumentAnalysis:
@@ -293,8 +429,9 @@ def analyze_statement(db: Session, app: Application, doc: Document, content: byt
         data = statement.analyze(statement.parse(content, doc.filename), float(declared) if declared else None,
                                  fns.get("annual_revenue"))
         analysis = DocumentAnalysis(kind="bank_statement", status="PARSED", data=data)
+        inflow = f"{data['avg_monthly_inflow']:,.0f}".replace(",", " ")
         msg = (f"Альфик разобрал выписку: {data['transactions']} операций, очищенные поступления "
-               f"{data['avg_monthly_inflow']:,.0f} ₽/мес за {data['months_used']} мес.").replace(",", " ")
+               f"{inflow} ₽/мес за {data['months_used']} мес.")
     except statement.StatementError as exc:
         analysis = DocumentAnalysis(kind="bank_statement", status="FAILED", error=str(exc)[:500])
         msg = f"Выписку не удалось разобрать автоматически ({exc}) — её проверит специалист"

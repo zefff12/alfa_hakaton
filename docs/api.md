@@ -16,6 +16,8 @@
 | Справочники | `GET /api/catalog`, `POST /api/calculator`, `GET /api/company/lookup/{inn}` |
 | Альфик | `POST /api/intake/message` (рассказ → поля заявки), `POST /api/intake/create`, `GET /api/intake/examples`, `POST /api/advisor/recommend`, `POST /api/precheck`, `POST /api/assistant/chat`, `GET /api/assistant/history`, `GET /api/assistant/status` |
 | Заявки клиента | `GET/POST /api/applications`, `GET/PATCH /api/applications/{id}`, `GET …/validate`, `POST …/submit`, `…/resubmit`, `…/accept`, `…/sign`, `…/cancel`, `…/documents` |
+| Кредитный подбор | `GET /api/match`, `PUT /api/match/profile`, `POST /api/match/swipe`, `GET/DELETE /api/favorites`, `POST/DELETE /api/favorites/{code}`, `POST /api/favorites/{code}/compare`, `GET /api/compare?codes=`, `GET /api/offers/{code}?amount&term`, `POST /api/offers/{code}/apply` |
+| Документы и проверка | `GET /api/applications/{id}/checks` (несоответствия с источниками), `POST /api/applications/{id}/fix` (исправить анкету по подсказке), `GET /api/documents/{id}/download`, `GET /api/me/capacity` |
 | Лента и уведомления | `GET /api/feed`, `POST /api/feed/react`, `GET /api/notifications`, `POST /api/notifications/read-all` |
 | Консоль банка | `GET /api/bank/applications?queue=manual\|processing\|waiting_client\|done`, `GET /api/bank/metrics`, `GET /api/bank/applications/{id}`, `POST …/assign`, `POST …/decision`, `POST /api/bank/documents/{id}/review`, `GET /api/bank/audit` |
 | Служебные | `GET /health/live`, `GET /health/ready` |

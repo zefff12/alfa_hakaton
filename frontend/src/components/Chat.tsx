@@ -15,6 +15,11 @@ const TIPS: Record<string, string> = {
   "/talk": t("Слушаю вас!"),
 };
 
+/** Открыть чат Альфика из любого места кабинета (кнопки «Задать вопрос», «Поддержка»). */
+export function openAlfik(message?: string) {
+  window.dispatchEvent(new CustomEvent("alfik:open", { detail: { message } }));
+}
+
 export default function Chat() {
   const [open, setOpen] = useState(false);
   const [msgs, setMsgs] = useState<ChatMsg[]>([]);
@@ -31,6 +36,16 @@ export default function Chat() {
     api<ChatMsg[]>("/api/assistant/history").then(setMsgs).catch(() => {});
     api("/api/assistant/status").then((s) => setLlm(s.llm)).catch(() => {});
   }, [open]);
+
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      setOpen(true);
+      const message = (e as CustomEvent<{ message?: string }>).detail?.message;
+      if (message) setTimeout(() => sendRef.current(message), 50);
+    };
+    window.addEventListener("alfik:open", onOpen);
+    return () => window.removeEventListener("alfik:open", onOpen);
+  }, []);
 
   useEffect(() => {
     body.current?.scrollTo({ top: body.current.scrollHeight, behavior: "smooth" });
@@ -53,6 +68,9 @@ export default function Chat() {
       setBusy(false);
     }
   }
+
+  const sendRef = useRef(send);
+  sendRef.current = send;
 
   if (!open) {
     return (

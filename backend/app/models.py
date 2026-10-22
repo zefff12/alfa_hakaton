@@ -183,6 +183,29 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class MatchProfileRow(Base):
+    """Параметры «Кредитного подбора» и история свайпов клиента."""
+
+    __tablename__ = "match_profiles"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    data: Mapped[dict] = mapped_column(JSON, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+
+class Favorite(Base):
+    """Предложения, которые клиент сохранил свайпом вправо."""
+
+    __tablename__ = "favorites"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    product_code: Mapped[str] = mapped_column(String(32))
+    in_compare: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class FeedInteraction(Base):
     """Реакции на ленту — сигнал для персонализации."""
 

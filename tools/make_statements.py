@@ -116,9 +116,25 @@ def to_csv(txs: list[dict]) -> str:
     return buf.getvalue()
 
 
+# Синтетические выписки с заранее заложенными ошибками — для демонстрации проверки документов
+COMPANIES["vector"] = {**COMPANIES["kolosok"], "inn": "7705123456", "name": "ООО «Вектор»",
+                       "account": "40702810700000099999", "monthly": 4_100_000, "extra": None,
+                       "clients": [("ООО «Сеть Вкусно»", 0.4), ("ИП Белов А.А.", 0.3), ("АО «Гастроном №1»", 0.3)]}
+COMPANIES["kolosok_low"] = {**COMPANIES["kolosok"], "monthly": 1_500_000, "extra": None}
+ERROR_SAMPLES = {
+    "vypiska_oshibka_chuzhaya_1c.txt": ("vector", None),        # выписка другой компании
+    "vypiska_oshibka_nizkie_oboroty_1c.txt": ("kolosok_low", None),  # обороты ниже анкеты
+    "vypiska_oshibka_2_mesyaca_1c.txt": ("kolosok", (date(2026, 8, 1), date(2026, 9, 30))),  # короткий период
+}
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    for code in COMPANIES:
+    for name, (code, period) in ERROR_SAMPLES.items():
+        txs = [t for t in gen(code) if not period or period[0] <= t["date"] <= period[1]]
+        (OUT / name).write_bytes(to_1c(code, txs).encode("cp1251"))
+        print(f"{name}: {len(txs)} операций")
+    for code in ("kolosok", "stroy", "flora"):
         txs = gen(code)
         (OUT / f"vypiska_{code}_1c.txt").write_bytes(to_1c(code, txs).encode("cp1251"))
         print(f"{code}: {len(txs)} операций")

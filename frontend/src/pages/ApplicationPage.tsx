@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import DocUpload from "../components/DocUpload";
 import DraftForm from "../components/DraftForm";
+import { CheckList, StepsTimeline, TaskList, type Checks } from "../components/Progress";
 import StatementCard, { SampleStatements } from "../components/StatementCard";
-import { AlfikSay, ErrorBox, Loader, StatusBadge, Track } from "../components/ui";
+import { AlfikSay, ErrorBox, Loader, StatusBadge } from "../components/ui";
 import { date, dateTime, money, months } from "../format";
 import type { Application } from "../types";
 import { PROCESSING } from "../types";
@@ -161,6 +162,7 @@ export default function ApplicationPage() {
   const nav = useNavigate();
   const [app, setApp] = useState<Application | null>(null);
   const [error, setError] = useState<any>(null);
+  const [checks, setChecks] = useState<Checks | null>(null);
 
   const load = useCallback(() => api<Application>(`/api/applications/${id}`).then(setApp).catch(setError), [id]);
   useEffect(() => { load(); }, [load]);
@@ -170,7 +172,12 @@ export default function ApplicationPage() {
     return () => clearInterval(t);
   }, [app?.status, load]);
 
-  if (error) return <ErrorBox error={error} />;
+  useEffect(() => {
+    if (!app || !["INFO_REQUESTED", "MANUAL_REVIEW"].includes(app.status)) return;
+    api<Checks>(`/api/applications/${app.id}/checks`).then(setChecks).catch(() => {});
+  }, [app]);
+
+  if (error && !app) return <ErrorBox error={error} />;
   if (!app) return <Loader />;
 
   const missing = app.requested_documents.filter((d) => !app.documents.some((x) => x.doc_type === d.code && x.status !== "REJECTED"));
@@ -195,15 +202,25 @@ export default function ApplicationPage() {
         <DraftForm initial={app} onSubmitted={(a) => { setApp(a); window.scrollTo({ top: 0 }); }} />
       ) : (
         <>
-          <div className="card">
-            <Track steps={app.track.steps} current={app.track.current} failed={app.status === "REJECTED" || app.status === "CANCELLED"} />
+          <div className="split-app">
+            <div className="card glow">
+              <h3 style={{ marginBottom: 16 }}>{t("Статус заявки")}</h3>
+              <StepsTimeline steps={app.steps} />
+            </div>
+            <div className="stack">
+              <AlfikSay pose={pose as any}>
+                {app.alfik.say}
+                {app.alfik.eta && <div className="small muted mt">{t("⏱ Обычно занимает")} {app.alfik.eta}</div>}
+                {app.alfik.todo && <div className="small mt"><b>{t("Что сделать:")}</b> {app.alfik.todo}</div>}
+              </AlfikSay>
+              {app.tasks.length > 0 && (
+                <div className="card stack">
+                  <h3>{t("Ваши задачи")}</h3>
+                  <TaskList app={app} tasks={app.tasks} />
+                </div>
+              )}
+            </div>
           </div>
-
-          <AlfikSay pose={pose as any}>
-            {app.alfik.say}
-            {app.alfik.eta && <div className="small muted mt">{t("⏱ Обычно занимает")} {app.alfik.eta}</div>}
-            {app.alfik.todo && <div className="small mt"><b>{t("Что сделать:")}</b> {app.alfik.todo}</div>}
-          </AlfikSay>
 
           <ErrorBox error={error} />
 
@@ -212,19 +229,31 @@ export default function ApplicationPage() {
           )}
 
           {app.status === "INFO_REQUESTED" && (
-            <div className="card stack">
+            <div className="card stack" id="upload">
               <h2>{t("Нужны документы")}</h2>
               {app.timeline.filter((e) => e.to_status === "INFO_REQUESTED").slice(-1).map((e) => <p key={e.id} className="muted">{e.message}</p>)}
               {app.requested_documents.map((d) => <DocUpload key={d.code} app={app} code={d.code} label={d.label} required onUploaded={setApp} />)}
               {app.statement && <StatementCard s={app.statement} declared={app.form_data.monthly_revenue} />}
               {app.requested_documents.some((d) => d.code === "bank_statement") && <SampleStatements />}
+              {checks && checks.summary.level !== "ok" && (
+                <div className="stack">
+                  <h3>{t("Альфик нашёл несоответствия")}</h3>
+                  <CheckList app={app} checks={checks} onlyProblems onFixed={(a, c) => { setApp(a); setChecks(c); }} />
+                </div>
+              )}
               <div className="row mt">
-                <button className="btn primary" disabled={missing.length > 0} onClick={() => act("resubmit")}>{t("Отправить повторно")}</button>
-                {missing.length > 0 && <span className="small muted">{t("Осталось загрузить:")} {missing.length}</span>}
+                <span className="small muted">
+                  {missing.length > 0
+                    ? t("Осталось загрузить: {0}. Как только всё будет на месте, заявка сама продолжит путь.", missing.length)
+                    : t("Все документы загружены")}
+                </span>
+                <button className="btn ghost sm" onClick={() => nav(`/documents?app=${app.id}`)}>{t("Все документы и проверка")}</button>
+                {missing.length === 0 && <button className="btn primary sm" onClick={() => act("resubmit")}>{t("Отправить повторно")}</button>}
               </div>
             </div>
           )}
 
+          <div id="action" />
           {(app.status === "APPROVED" || app.status === "COUNTER_OFFER") && app.offer && <OfferBlock app={app} onChange={setApp} />}
           {app.status === "SIGNING" && <SigningBlock app={app} onChange={setApp} />}
           {app.status === "ISSUING" && <div className="card"><div className="substeps"><div className="substep run"><span className="st" />{t("Перечисляем деньги на расчётный счёт…")}</div></div></div>}

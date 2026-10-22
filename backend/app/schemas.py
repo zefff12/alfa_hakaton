@@ -156,6 +156,32 @@ class IntakeCreateRequest(BaseModel):
     product_code: str | None = None
 
 
+class MatchProfileUpdate(BaseModel):
+    purpose: str | None = Field(default=None, examples=["expansion"])
+    amount: int | None = Field(default=None, ge=0, examples=[5_000_000])
+    term_months: int | None = Field(default=None, ge=1, le=120, examples=[36])
+    has_collateral: bool | None = None
+    deferral: bool | None = None
+    priority: Literal["cost", "speed", "docs", "balanced"] | None = None
+    monthly_revenue: float | None = Field(default=None, ge=0)
+    reset_swipes: bool = False
+
+
+class SwipeRequest(BaseModel):
+    product_code: str = Field(examples=["WORKING"])
+    action: Literal["like", "skip"]
+
+
+class OfferApplyRequest(BaseModel):
+    amount: int | None = Field(default=None, ge=0)
+    term_months: int | None = Field(default=None, ge=1, le=120)
+
+
+class FixRequest(BaseModel):
+    field: Literal["monthly_revenue", "monthly_expenses", "existing_payments"]
+    value: float = Field(ge=0)
+
+
 class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

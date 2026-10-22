@@ -27,7 +27,7 @@ export default function Advisor() {
 
   useEffect(() => {
     if (params.get("calc") && catalog && !result) {
-      setChosen("EXPRESS");
+      setChosen(params.get("product") ?? "EXPRESS");
       setResult({ items: [], explanation: "" });
     }
   }, [catalog, params, result]);

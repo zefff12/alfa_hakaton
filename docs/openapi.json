@@ -1112,6 +1112,619 @@
         ]
       }
     },
+    "/api/match": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Колода предложений с учётом приоритетов и свайпов",
+        "operationId": "match_deck_api_match_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/match/profile": {
+      "put": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Изменить параметры подбора",
+        "operationId": "match_profile_api_match_profile_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/match/swipe": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Свайп: вправо — в избранное, влево — пропустить",
+        "operationId": "match_swipe_api_match_swipe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwipeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/favorites": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Избранные предложения",
+        "operationId": "favorites_list_api_favorites_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Очистить избранное",
+        "operationId": "favorites_clear_api_favorites_delete",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/favorites/{code}": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Добавить в избранное",
+        "operationId": "favorites_add_api_favorites__code__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Убрать из избранного",
+        "operationId": "favorites_remove_api_favorites__code__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/favorites/{code}/compare": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Включить/исключить из сравнения",
+        "operationId": "favorites_compare_toggle_api_favorites__code__compare_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/compare": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Сравнение предложений",
+        "operationId": "compare_api_compare_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Codes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers/{code}": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Подробнее о предложении",
+        "operationId": "offer_detail_api_offers__code__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Amount"
+            }
+          },
+          {
+            "name": "term",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Term"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/offers/{code}/apply": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Кредитный подбор"
+        ],
+        "summary": "Оформить заявку по предложению",
+        "operationId": "offer_apply_api_offers__code__apply_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OfferApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{app_id}/checks": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Документы"
+        ],
+        "summary": "Проверка документов и анкеты на несоответствия",
+        "operationId": "app_checks_api_applications__app_id__checks_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "App Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/applications/{app_id}/fix": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Документы"
+        ],
+        "summary": "Исправить анкету по подсказке Альфика",
+        "operationId": "app_fix_api_applications__app_id__fix_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "App Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FixRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/capacity": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Кабинет клиента"
+        ],
+        "summary": "«Мои возможности»: предварительная сумма",
+        "operationId": "capacity_api_me_capacity_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/assistant/history": {
       "get": {
         "tags": [
@@ -2359,6 +2972,30 @@
         ],
         "title": "FeedReaction"
       },
+      "FixRequest": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": [
+              "monthly_revenue",
+              "monthly_expenses",
+              "existing_payments"
+            ],
+            "title": "Field"
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "value"
+        ],
+        "title": "FixRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2452,6 +3089,113 @@
         ],
         "title": "LoginRequest"
       },
+      "MatchProfileUpdate": {
+        "properties": {
+          "purpose": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purpose",
+            "examples": [
+              "expansion"
+            ]
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "examples": [
+              5000000
+            ]
+          },
+          "term_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 120.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Months",
+            "examples": [
+              36
+            ]
+          },
+          "has_collateral": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Has Collateral"
+          },
+          "deferral": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deferral"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "cost",
+                  "speed",
+                  "docs",
+                  "balanced"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "monthly_revenue": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Monthly Revenue"
+          },
+          "reset_swipes": {
+            "type": "boolean",
+            "title": "Reset Swipes",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "MatchProfileUpdate"
+      },
       "NotificationOut": {
         "properties": {
           "id": {
@@ -2497,6 +3241,37 @@
           "created_at"
         ],
         "title": "NotificationOut"
+      },
+      "OfferApplyRequest": {
+        "properties": {
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "term_months": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 120.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Term Months"
+          }
+        },
+        "type": "object",
+        "title": "OfferApplyRequest"
       },
       "PrecheckRequest": {
         "properties": {
@@ -2661,6 +3436,31 @@
           "code"
         ],
         "title": "SignRequest"
+      },
+      "SwipeRequest": {
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "title": "Product Code",
+            "examples": [
+              "WORKING"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "like",
+              "skip"
+            ],
+            "title": "Action"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_code",
+          "action"
+        ],
+        "title": "SwipeRequest"
       },
       "TokenResponse": {
         "properties": {

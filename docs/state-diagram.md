@@ -27,7 +27,7 @@ stateDiagram-v2
     MANUAL_REVIEW --> INFO_REQUESTED: андеррайтер
     MANUAL_REVIEW --> REJECTED: андеррайтер
 
-    INFO_REQUESTED --> SUBMITTED: клиент дозагрузил документы
+    INFO_REQUESTED --> SUBMITTED: все запрошенные документы загружены (автоматически)
 
     APPROVED --> SIGNING: клиент принял условия
     COUNTER_OFFER --> SIGNING: клиент выбрал вариант

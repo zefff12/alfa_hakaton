@@ -143,6 +143,8 @@ export interface Application {
   submitted_at: string | null;
   decided_at: string | null;
   statement: any | null;
+  steps: AppStep[];
+  tasks: AppTask[];
   // только в консоли банка
   data_check?: any;
   enrichment?: any;
@@ -161,3 +163,82 @@ export interface ChatMsg {
 }
 
 export const PROCESSING = ["SUBMITTED", "DATA_CHECK", "ENRICHMENT", "SCORING", "ISSUING"];
+
+export interface AppStep {
+  key: string;
+  title: string;
+  state: "done" | "active" | "pending" | "attention" | "failed" | "skipped";
+  detail: string;
+  at: string | null;
+}
+
+export interface AppTask {
+  type: "upload" | "offer" | "sign" | "submit";
+  code?: string;
+  title: string;
+  done: boolean;
+}
+
+export interface MatchOffer {
+  code: string;
+  name: string;
+  short: string;
+  description: string;
+  amount: number;
+  term_months: number;
+  rate: number;
+  monthly_payment: number;
+  total_interest: number;
+  total_repayment: number;
+  revolving: boolean;
+  max_amount: number;
+  min_amount: number;
+  min_term: number;
+  max_term: number;
+  collateral: "none" | "optional" | "required";
+  decision_time: string;
+  speed_hours: number;
+  form: string;
+  early_repayment: string;
+  feature: string;
+  documents: { code: string; label: string }[];
+  fits: string[];
+  gaps: string[];
+  eligible: boolean;
+  recommended?: boolean;
+  match_percent?: number;
+  in_compare?: boolean;
+}
+
+export interface MatchProfile {
+  purpose: string;
+  amount: number;
+  term_months: number;
+  has_collateral: boolean;
+  deferral: boolean;
+  priority: "cost" | "speed" | "docs" | "balanced";
+  monthly_revenue: number | null;
+  likes: string[];
+  skips: string[];
+  business_age_months: number;
+}
+
+export interface Deck {
+  profile: MatchProfile;
+  priority_label: string;
+  offers: MatchOffer[];
+  deck: MatchOffer[];
+  insight: string | null;
+  favorites: string[];
+  configured: boolean;
+  stats: { total: number; liked: number; skipped: number; left: number };
+}
+
+export interface Favorites {
+  items: MatchOffer[];
+  compare_count: number;
+}
+
+/** Картинки продуктов из макета Figma */
+export const productArt = (code: string) => `/brand/products/${code}-art.webp`;
+export const productIcon = (code: string) => `/brand/products/${code}-icon.webp`;

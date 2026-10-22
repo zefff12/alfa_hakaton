@@ -13,6 +13,8 @@ erDiagram
     USERS ||--o{ NOTIFICATIONS : "уведомления"
     USERS ||--o{ CHAT_MESSAGES : "диалог с Альфиком"
     USERS ||--o{ FEED_INTERACTIONS : "реакции на ленту"
+    USERS ||--o| MATCH_PROFILES : "параметры подбора и свайпы"
+    USERS ||--o{ FAVORITES : "избранные предложения"
 
     COMPANIES {
         int id PK
@@ -104,6 +106,17 @@ erDiagram
         int user_id FK
         string item_id
         string action "open | like | hide"
+    }
+    MATCH_PROFILES {
+        int id PK
+        int user_id FK, UK
+        json data "цель, сумма, срок, залог, отсрочка, приоритет, likes, skips"
+    }
+    FAVORITES {
+        int id PK
+        int user_id FK
+        string product_code
+        bool in_compare
     }
 ```
 

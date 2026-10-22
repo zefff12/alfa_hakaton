@@ -165,10 +165,10 @@ def rule_answer(text: str, user: User, app: Application | None) -> dict | None:
            r"statement", r"文件", r"材料", r"上传", r"流水"):
         if app and app.requested_documents:
             docs = L(", ", ", ", "、").join(tr(DOCUMENT_TYPES.get(d, d)) for d in app.requested_documents)
-            return {"text": L(f"По заявке {app.number} банк ждёт: {docs}. Загрузите их на странице заявки и нажмите «Отправить повторно».",
-                              f"For application {app.number} the bank is waiting for: {docs}. Upload them on the application page and click “Resubmit”.",
-                              f"申请 {app.number} 需要：{docs}。请在申请页面上传并点击“重新提交”。"),
-                    "actions": [_a(tr("Загрузить документы"), f"/applications/{app.id}")]}
+            return {"text": L(f"По заявке {app.number} банк ждёт: {docs}. Загрузите их в разделе «Документы» — заявка продолжит путь автоматически.",
+                              f"For application {app.number} the bank is waiting for: {docs}. Upload them in the “Documents” section — the application will move on automatically.",
+                              f"申请 {app.number} 需要：{docs}。请在“文件”栏目上传——申请将自动继续处理。"),
+                    "actions": [_a(tr("Загрузить документы"), f"/documents?app={app.id}")]}
         return {"text": L("Для большинства заявок документы не нужны: сведения о компании я сам запрашиваю в ЕГРЮЛ, ФНС и БКИ. "
                           "Дополнительно могут понадобиться: договор поставки для инвестиционного кредита, госконтракт для тендерного, "
                           "выписка по счёту — для крупных сумм. Выписку в формате 1С или CSV я прочитаю сам.",
