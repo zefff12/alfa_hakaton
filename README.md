@@ -69,15 +69,16 @@ LLM_ENABLED=true docker compose --profile llm up --build
 
 Масштабирование воркеров конвейера: `docker compose up --scale worker=3`.
 
-## Публичное демо (Hugging Face Spaces)
+## Публичное демо (Render)
 
-Для показа без установки весь кабинет собирается в один контейнер: [`deploy/huggingface`](deploy/huggingface).
-Space содержит только `Dockerfile` и `README.md` оттуда; при сборке код берётся из этого репозитория,
+Для показа без установки весь кабинет собирается в один контейнер — корневой [`Dockerfile`](Dockerfile):
 фронтенд раздаёт сам API (`STATIC_DIR`), обработчик заявок работает внутри API, моки ЕГРЮЛ/ФНС/БКИ —
-в том же контейнере, база — SQLite (демо-данные создаются заново при каждом запуске).
-Обновить демо после пуша в GitHub — **Settings → Factory rebuild** в Space.
+в том же контейнере ([`deploy/start.sh`](deploy/start.sh)), база — SQLite (демо-данные создаются
+заново при каждом запуске). На Render сервис описан в [`render.yaml`](render.yaml) (бесплатный тариф,
+автообновление при каждом push в `main`). Бесплатный сервис засыпает без посетителей — первое
+открытие после паузы занимает около минуты.
 
-Проверить образ локально: `docker build -t alfa-demo deploy/huggingface && docker run -p 7860:7860 alfa-demo` → http://localhost:7860
+Проверить образ локально: `docker build -t alfa-demo . && docker run -p 7860:7860 alfa-demo` → http://localhost:7860
 
 ## Запуск без Docker (для разработки)
 

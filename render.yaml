@@ -1,0 +1,13 @@
+# Публичное демо на Render (бесплатный тариф): один веб-сервис из корневого Dockerfile.
+# Render → New → Blueprint → этот репозиторий; обновляется автоматически при каждом push в main.
+services:
+  - type: web
+    name: alfa-kabinet
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
