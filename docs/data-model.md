@@ -9,6 +9,7 @@ erDiagram
     USERS ||--o{ APPLICATIONS : "автор"
     APPLICATIONS ||--o{ APPLICATION_EVENTS : "аудит"
     APPLICATIONS ||--o{ DOCUMENTS : "документы"
+    DOCUMENTS ||--o| DOCUMENT_ANALYSES : "разбор выписки"
     USERS ||--o{ NOTIFICATIONS : "уведомления"
     USERS ||--o{ CHAT_MESSAGES : "диалог с Альфиком"
     USERS ||--o{ FEED_INTERACTIONS : "реакции на ленту"
@@ -76,6 +77,14 @@ erDiagram
         string sha256
         string status "UPLOADED | ACCEPTED | REJECTED"
     }
+    DOCUMENT_ANALYSES {
+        int id PK
+        int document_id FK
+        string kind "bank_statement"
+        string status "PARSED | FAILED"
+        json data "обороты по месяцам, плательщики, флаги"
+        string error
+    }
     NOTIFICATIONS {
         int id PK
         int user_id FK
@@ -102,6 +111,8 @@ erDiagram
 
 | Данные | Где появляются | Где используются повторно |
 |---|---|---|
+| Рассказ клиента Альфику | `form_data.intake` (поле, значение, фраза-источник) | Предзаполнение черновика; видно, откуда взялось каждое значение |
+| Разбор выписки | `document_analyses.data` | Сверка с анкетой и ФНС, скоринг (подтверждённая выручка), резюме андеррайтера |
 | Ответы «Каковы мои шансы?» | `precheck`, `form_data` | Предзаполнение заявки — повторно не вводятся |
 | Реквизиты из ЕГРЮЛ | Регистрация, шаг «Компания», этап `ENRICHMENT` | Карточка компании, отраслевой риск, персонализация ленты |
 | Выручка ФНС / платежи БКИ | `enrichment` | Скоринг, сверка «со слов клиента vs источники» у андеррайтера |

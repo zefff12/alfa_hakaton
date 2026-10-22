@@ -137,6 +137,24 @@ class Document(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     application: Mapped[Application] = relationship(back_populates="documents")
+    analysis: Mapped["DocumentAnalysis | None"] = relationship(back_populates="document", uselist=False,
+                                                               cascade="all, delete-orphan")
+
+
+class DocumentAnalysis(Base):
+    """Результат автоматического разбора документа (например, банковской выписки)."""
+
+    __tablename__ = "document_analyses"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    document_id: Mapped[int] = mapped_column(ForeignKey("documents.id"), unique=True, index=True)
+    kind: Mapped[str] = mapped_column(String(32))  # bank_statement
+    status: Mapped[str] = mapped_column(String(16))  # PARSED | FAILED
+    data: Mapped[dict | None] = mapped_column(JSON)
+    error: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    document: Mapped[Document] = relationship(back_populates="analysis")
 
 
 class Notification(Base):

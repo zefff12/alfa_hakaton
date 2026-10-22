@@ -14,7 +14,7 @@
 |---|---|
 | Авторизация | `POST /api/auth/login`, `POST /api/auth/register`, `GET /api/auth/me`, `GET /api/auth/demo-accounts` |
 | Справочники | `GET /api/catalog`, `POST /api/calculator`, `GET /api/company/lookup/{inn}` |
-| Альфик | `POST /api/advisor/recommend`, `POST /api/precheck`, `POST /api/assistant/chat`, `GET /api/assistant/history`, `GET /api/assistant/status` |
+| Альфик | `POST /api/intake/message` (рассказ → поля заявки), `POST /api/intake/create`, `GET /api/intake/examples`, `POST /api/advisor/recommend`, `POST /api/precheck`, `POST /api/assistant/chat`, `GET /api/assistant/history`, `GET /api/assistant/status` |
 | Заявки клиента | `GET/POST /api/applications`, `GET/PATCH /api/applications/{id}`, `GET …/validate`, `POST …/submit`, `…/resubmit`, `…/accept`, `…/sign`, `…/cancel`, `…/documents` |
 | Лента и уведомления | `GET /api/feed`, `POST /api/feed/react`, `GET /api/notifications`, `POST /api/notifications/read-all` |
 | Консоль банка | `GET /api/bank/applications?queue=manual\|processing\|waiting_client\|done`, `GET /api/bank/metrics`, `GET /api/bank/applications/{id}`, `POST …/assign`, `POST …/decision`, `POST /api/bank/documents/{id}/review`, `GET /api/bank/audit` |
@@ -36,6 +36,17 @@ curl -s -X POST localhost:8000/api/applications/$ID/submit -H "Authorization: Be
 sleep 12
 curl -s localhost:8000/api/applications/$ID -H "Authorization: Bearer $TOKEN" | jq '{status, offer: .offer.options}'
 ```
+
+## Пример: заявка из рассказа
+
+```bash
+curl -s localhost:8000/api/intake/message -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"message":"Нужно 2 млн на новую печь, верну за 3 года, выручка около 600 тысяч в месяц"}' | jq '{reply, missing, state}'
+```
+
+Следующий ответ клиента отправляется вместе с полученным `state`: `{"message": "примерно 420 тысяч", "state": ...}`. Когда `ready=true` — `POST /api/intake/create {"state": ..., "product_code": "INVEST"}` создаёт черновик.
+
+Загрузка выписки — обычный `POST /api/applications/{id}/documents` с `doc_type=bank_statement`: файл 1С / CSV разбирается сразу, результат приходит в поле `statement` карточки заявки.
 
 ## Ошибки
 

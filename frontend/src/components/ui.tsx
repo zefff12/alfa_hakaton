@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { api } from "../api";
 import { STATUS_TONE, num, parseNum } from "../format";
 import type { Catalog } from "../types";
+import { t } from "../i18n";
 
 export const ALFIK = {
   sit: "/alfik/alfik-sit.png",
@@ -14,9 +15,9 @@ export function AlfikSay({ children, pose = "sit", size, soft }: {
 }) {
   return (
     <div className={`alfik-say ${size ?? ""}`}>
-      <img src={ALFIK[pose]} alt="Альфик" className="bob" />
+      <img src={ALFIK[pose]} alt={t("Альфик")} className="bob" />
       <div className={`bubble ${soft ? "soft" : ""}`}>
-        <b className="name">Альфик</b>
+        <b className="name">{t("Альфик")}</b>
         {children}
       </div>
     </div>
@@ -107,7 +108,7 @@ export function Gauge({ value, label }: { value: number; label?: string }) {
         <path d="M20 115 A90 90 0 0 1 200 115" fill="none" stroke="#eef0f3" strokeWidth="18" strokeLinecap="round" />
         <path d={`M20 115 A90 90 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}`} fill="none" stroke={color} strokeWidth="18" strokeLinecap="round" />
       </svg>
-      <div className="val">{value}<small>{label ?? "из 100"}</small></div>
+      <div className="val">{value}<small>{label ?? t("из 100")}</small></div>
     </div>
   );
 }
@@ -137,6 +138,6 @@ export function FactorList({ factors }: { factors: { code: string; name: string;
   );
 }
 
-export function Loader({ text = "Загружаю…" }: { text?: string }) {
+export function Loader({ text = t("Загружаю…") }: { text?: string }) {
   return <div className="empty"><img src={ALFIK.sit} alt="" className="bob" /><p>{text}</p></div>;
 }

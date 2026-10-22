@@ -1002,6 +1002,116 @@
         ]
       }
     },
+    "/api/intake/message": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Альфик"
+        ],
+        "summary": "«Расскажите Альфику»: разбор рассказа клиента в параметры заявки",
+        "operationId": "intake_message_api_intake_message_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/intake/examples": {
+      "get": {
+        "tags": [
+          "Кабинет клиента",
+          "Альфик"
+        ],
+        "summary": "Примеры фраз для диалога",
+        "operationId": "intake_examples_api_intake_examples_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/intake/create": {
+      "post": {
+        "tags": [
+          "Кабинет клиента",
+          "Альфик"
+        ],
+        "summary": "Создать черновик заявки из диалога",
+        "operationId": "intake_create_api_intake_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/assistant/history": {
       "get": {
         "tags": [
@@ -2261,6 +2371,62 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "IntakeCreateRequest": {
+        "properties": {
+          "state": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "State"
+          },
+          "product_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "title": "IntakeCreateRequest"
+      },
+      "IntakeRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 3000,
+            "minLength": 1,
+            "title": "Message",
+            "examples": [
+              "Нужно 2 млн на новую печь, верну за 3 года, выручка около 600 тысяч в месяц"
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State",
+            "description": "Состояние диалога из предыдущего ответа"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "IntakeRequest"
       },
       "LoginRequest": {
         "properties": {

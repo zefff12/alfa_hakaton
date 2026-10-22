@@ -1,25 +1,29 @@
+import { LOCALE, lang, t } from "./i18n";
+
 export const money = (v: number | null | undefined, digits = 0) =>
   v == null || Number.isNaN(v)
     ? "—"
-    : new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: digits }).format(v);
+    : new Intl.NumberFormat(LOCALE, { style: "currency", currency: "RUB", currencyDisplay: "narrowSymbol", maximumFractionDigits: digits }).format(v);
 
-export const num = (v: number | null | undefined) => (v == null ? "" : new Intl.NumberFormat("ru-RU").format(v));
+export const num = (v: number | null | undefined) => (v == null ? "" : new Intl.NumberFormat(LOCALE).format(v));
 
 export const parseNum = (s: string) => {
-  const n = Number(s.replace(/\s/g, "").replace(",", "."));
+  const n = Number(s.replace(/[\s,]/g, "").replace(/[^\d.]/g, ""));
   return Number.isFinite(n) ? n : 0;
 };
 
 export const dateTime = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
+  iso ? new Date(iso).toLocaleString(LOCALE, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—";
 
 export const date = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" }) : "—";
+  iso ? new Date(iso).toLocaleDateString(LOCALE, { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
 export const months = (n: number | null | undefined) => {
   if (n == null) return "—";
+  if (lang === "zh") return `${n} ${t("месяцев")}`;
+  if (lang === "en") return `${n} ${n === 1 ? t("месяц") : t("месяцев")}`;
   const m10 = n % 10, m100 = n % 100;
-  const w = m10 === 1 && m100 !== 11 ? "месяц" : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? "месяца" : "месяцев";
+  const w = m10 === 1 && m100 !== 11 ? t("месяц") : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? t("месяца") : t("месяцев");
   return `${n} ${w}`;
 };
 

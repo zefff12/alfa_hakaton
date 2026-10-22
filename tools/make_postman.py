@@ -35,6 +35,11 @@ login_test = lambda var: [
 scenario = [
     req("1. Вход клиента (Колосок)", "POST", "/api/auth/login", {"login": "kolosok", "password": "demo"},
         login_test("token"), auth=None),
+    req("1a. Рассказ Альфику своими словами", "POST", "/api/intake/message",
+        {"message": "Нужно 3 млн на закупку товара, верну за 2 года, выручка 4,5 млн в месяц, расходы 3,6 млн, плачу 180 тысяч по кредиту"},
+        ["const r = pm.response.json(); console.log(r.reply);",
+         "pm.test('ready', () => pm.expect(r.ready).to.be.true);",
+         "pm.collectionVariables.set('intakeState', JSON.stringify(r.state));"]),
     req("2. Подбор продукта Альфиком", "POST", "/api/advisor/recommend",
         {"purpose": "working_capital", "amount": 3000000, "term_months": 24, "has_collateral": False}),
     req("3. Каковы мои шансы?", "POST", "/api/precheck",
@@ -81,7 +86,7 @@ collection = {
     },
     "variable": [{"key": "baseUrl", "value": "http://localhost:8000"}, {"key": "token", "value": ""},
                  {"key": "uwToken", "value": ""}, {"key": "appId", "value": ""}, {"key": "optionId", "value": "opt1"},
-                 {"key": "signCode", "value": ""}],
+                 {"key": "signCode", "value": ""}, {"key": "intakeState", "value": "{}"}],
     "item": [{"name": "Сквозной сценарий (E2E)", "item": scenario}, {"name": "Все эндпоинты", "item": all_items}],
 }
 out = ROOT / "docs" / "postman_collection.json"

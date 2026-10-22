@@ -10,12 +10,12 @@ from app.domain.decision import offer_rate
 from app.domain.products import DOCUMENT_TYPES, PRODUCTS, PURPOSES, get_product
 from app.integrations import clients
 from app.models import Application, ChatMessage, Document, Notification, User
-from app.schemas import (AcceptOfferRequest, AdvisorRequest, ApplicationAction, ApplicationCreate, ApplicationUpdate,
+from app.schemas import (AcceptOfferRequest, AdvisorRequest, ApplicationAction, ApplicationCreate, ApplicationUpdate, IntakeCreateRequest, IntakeRequest,
                          CalcRequest, ChatMessageOut, ChatRequest, EgrulLookupOut, FeedReaction, NotificationOut,
                          PrecheckRequest, SignRequest)
 from app.security import current_user, require_client
 from app.services import applications as svc
-from app.services import assistant, feed
+from app.services import assistant, feed, intake
 
 router = APIRouter(prefix="/api", tags=["Кабинет клиента"])
 
@@ -158,6 +158,23 @@ def download(doc_id: int, user: User = Depends(current_user), db: Session = Depe
 @router.post("/assistant/chat", response_model=ChatMessageOut, tags=["Альфик"], summary="Вопрос Альфику")
 def chat(req: ChatRequest, user: User = Depends(require_client), db: Session = Depends(get_db)):
     return assistant.answer(db, user, req.message.strip(), req.application_id)
+
+
+@router.post("/intake/message", tags=["Альфик"], summary="«Расскажите Альфику»: разбор рассказа клиента в параметры заявки")
+def intake_message(req: IntakeRequest, user: User = Depends(require_client)):
+    return intake.step(user, req.message.strip(), req.state)
+
+
+@router.get("/intake/examples", tags=["Альфик"], summary="Примеры фраз для диалога")
+def intake_examples():
+    return {"examples": intake.examples()}
+
+
+@router.post("/intake/create", status_code=201, tags=["Альфик"], summary="Создать черновик заявки из диалога")
+def intake_create(req: IntakeCreateRequest, user: User = Depends(require_client), db: Session = Depends(get_db)):
+    if not (req.state.get("fields") or {}).get("amount"):
+        raise HTTPException(422, "Сначала расскажите, сколько денег нужно")
+    return svc.serialize(intake.create_application(db, user, req.state, req.product_code))
 
 
 @router.get("/assistant/history", response_model=list[ChatMessageOut], tags=["Альфик"], summary="История диалога")

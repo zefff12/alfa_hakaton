@@ -3,14 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import type { ChatMsg } from "../types";
 import { ALFIK } from "./ui";
+import { t } from "../i18n";
 
-const QUICK = ["Какой статус заявки?", "Какой кредит мне подойдёт?", "Каковы мои шансы?", "Платёж слишком высокий", "Какие нужны документы?", "Что такое овердрафт?"];
+const QUICK = [t("Какой статус заявки?"), t("Какой кредит мне подойдёт?"), t("Каковы мои шансы?"), t("Платёж слишком высокий"), t("Какие нужны документы?"), t("Что такое овердрафт?")];
 
 const TIPS: Record<string, string> = {
-  "/": "Чем помочь?",
-  "/advisor": "Помогу выбрать!",
-  "/precheck": "Объясню каждый вопрос",
-  "/feed": "Подобрал для вас",
+  "/": t("Чем помочь?"),
+  "/advisor": t("Помогу выбрать!"),
+  "/precheck": t("Объясню каждый вопрос"),
+  "/feed": t("Подобрал для вас"),
+  "/talk": t("Слушаю вас!"),
 };
 
 export default function Chat() {
@@ -46,7 +48,7 @@ export default function Chat() {
       });
       setMsgs((m) => [...m, reply]);
     } catch (e: any) {
-      setMsgs((m) => [...m, { ...tmp, id: -Date.now(), role: "assistant", content: e.message ?? "Не получилось ответить" }]);
+      setMsgs((m) => [...m, { ...tmp, id: -Date.now(), role: "assistant", content: e.message ?? t("Не получилось ответить") }]);
     } finally {
       setBusy(false);
     }
@@ -54,28 +56,28 @@ export default function Chat() {
 
   if (!open) {
     return (
-      <button className="chat-fab" onClick={() => setOpen(true)} aria-label="Открыть чат с Альфиком">
-        <span className="fab-tip">{TIPS[loc.pathname] ?? "Спросите меня!"}</span>
+      <button className="chat-fab" onClick={() => setOpen(true)} aria-label={t("Открыть чат с Альфиком")}>
+        <span className="fab-tip">{TIPS[loc.pathname] ?? t("Спросите меня!")}</span>
         <img src={ALFIK.wave} alt="" className="bob" />
       </button>
     );
   }
 
   return (
-    <div className="chat-panel" role="dialog" aria-label="Чат с Альфиком">
+    <div className="chat-panel" role="dialog" aria-label={t("Чат с Альфиком")}>
       <div className="chat-head">
         <img src={ALFIK.wave} alt="" />
         <div>
-          <b>Альфик</b>
-          <small>{llm?.available ? `онлайн · ИИ ${llm.model}` : "онлайн · отвечаю по базе знаний"}</small>
+          <b>{t("Альфик")}</b>
+          <small>{llm?.available ? t("онлайн · ИИ {0}", llm.model) : t("онлайн · отвечаю по базе знаний")}</small>
         </div>
-        <button onClick={() => setOpen(false)} aria-label="Закрыть">×</button>
+        <button onClick={() => setOpen(false)} aria-label={t("Закрыть")}>×</button>
       </div>
       <div className="chat-body" ref={body}>
         {msgs.length === 0 && (
           <div className="msg assistant">
-            Привет! Я Альфик 👋 Помогу подобрать кредит, оценить шансы, заполнить заявку и объясню, что происходит на каждом этапе.
-            Спросите что-нибудь или выберите вопрос ниже.
+            
+            {t("Привет! Я Альфик 👋 Помогу подобрать кредит, оценить шансы, заполнить заявку и объясню, что происходит на каждом этапе. Спросите что-нибудь или выберите вопрос ниже.")}
           </div>
         )}
         {msgs.map((m) => (
@@ -84,11 +86,11 @@ export default function Chat() {
             {m.meta?.actions && m.meta.actions.length > 0 && (
               <div className="msg-actions">
                 {m.meta.actions.map((a) => (
-                  <button key={a.to + a.label} onClick={() => nav(a.to)}>{a.label}</button>
+                  <button key={a.to + a.label} onClick={() => { nav(a.to, { state: { prefill: a.prefill } }); setOpen(false); }}>{a.label}</button>
                 ))}
               </div>
             )}
-            {m.role === "assistant" && m.source === "llm" && <span className="src">ответ сгенерирован локальной ИИ-моделью</span>}
+            {m.role === "assistant" && m.source === "llm" && <span className="src">{t("ответ сгенерирован локальной ИИ-моделью")}</span>}
           </div>
         ))}
         {busy && <div className="msg assistant typing"><span /><span /><span /></div>}
@@ -97,7 +99,7 @@ export default function Chat() {
         {QUICK.map((q) => <button key={q} onClick={() => send(q)}>{q}</button>)}
       </div>
       <form className="chat-input" onSubmit={(e) => { e.preventDefault(); send(text); }}>
-        <input className="input" placeholder="Напишите вопрос…" value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} />
+        <input className="input" placeholder={t("Напишите вопрос…")} value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} />
         <button className="btn primary" disabled={busy || !text.trim()}>➤</button>
       </form>
     </div>

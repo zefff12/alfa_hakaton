@@ -11,6 +11,7 @@ import Feed from "./pages/Feed";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Precheck from "./pages/Precheck";
+import Talk from "./pages/Talk";
 import BankApplication from "./pages/bank/BankApplication";
 import BankAudit from "./pages/bank/BankAudit";
 import BankQueue from "./pages/bank/BankQueue";
@@ -32,6 +33,7 @@ function App() {
         <Route index element={<Home />} />
         <Route path="/advisor" element={<Advisor />} />
         <Route path="/precheck" element={<Precheck />} />
+        <Route path="/talk" element={<Talk />} />
         <Route path="/applications" element={<Applications />} />
         <Route path="/applications/:id" element={<ApplicationPage />} />
         <Route path="/feed" element={<Feed />} />

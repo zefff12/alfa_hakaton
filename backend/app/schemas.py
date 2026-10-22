@@ -145,6 +145,17 @@ class ChatRequest(BaseModel):
     page: str | None = Field(default=None, description="Экран, с которого задан вопрос — для контекста")
 
 
+class IntakeRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=3000,
+                         examples=["Нужно 2 млн на новую печь, верну за 3 года, выручка около 600 тысяч в месяц"])
+    state: dict[str, Any] | None = Field(default=None, description="Состояние диалога из предыдущего ответа")
+
+
+class IntakeCreateRequest(BaseModel):
+    state: dict[str, Any]
+    product_code: str | None = None
+
+
 class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

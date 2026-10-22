@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { api } from "../api";
 import { useAuth } from "../auth";
 import { dateTime } from "../format";
 import Chat from "./Chat";
+import { t } from "../i18n";
+import LangSwitch from "./LangSwitch";
 
 const CLIENT_NAV = [
-  { to: "/", label: "Главная", ico: "🏠", end: true },
-  { to: "/advisor", label: "Подобрать кредит", ico: "🧭" },
-  { to: "/precheck", label: "Мои шансы", ico: "🎯" },
-  { to: "/applications", label: "Мои заявки", ico: "📄" },
-  { to: "/feed", label: "Лента Альфика", ico: "📰" },
+  { to: "/", label: t("Главная"), ico: "🏠", end: true },
+  { to: "/talk", label: t("Рассказать Альфику"), ico: "🎙" },
+  { to: "/advisor", label: t("Подобрать кредит"), ico: "🧭" },
+  { to: "/precheck", label: t("Мои шансы"), ico: "🎯" },
+  { to: "/applications", label: t("Мои заявки"), ico: "📄" },
+  { to: "/feed", label: t("Лента Альфика"), ico: "📰" },
 ];
 const BANK_NAV = [
-  { to: "/bank", label: "Очередь заявок", ico: "📥", end: true },
-  { to: "/bank/audit", label: "Журнал событий", ico: "🧾" },
+  { to: "/bank", label: t("Очередь заявок"), ico: "📥", end: true },
+  { to: "/bank/audit", label: t("Журнал событий"), ico: "🧾" },
 ];
 
 function Notifications() {
@@ -36,12 +39,12 @@ function Notifications() {
       <button className="icon-btn" onClick={() => {
         setOpen(!open);
         if (!open && unread) api("/api/notifications/read-all", { method: "POST" }).catch(() => {});
-      }} aria-label="Уведомления">
+      }} aria-label={t("Уведомления")}>
         🔔{unread > 0 && <span className="dot" />}
       </button>
       {open && (
         <div className="dropdown" onMouseLeave={() => setOpen(false)}>
-          {items.length === 0 && <div className="n-item muted">Уведомлений пока нет</div>}
+          {items.length === 0 && <div className="n-item muted">{t("Уведомлений пока нет")}</div>}
           {items.map((n) => (
             <div key={n.id} className={`n-item ${n.is_read ? "" : "unread"}`} onClick={() => {
               setOpen(false);
@@ -61,6 +64,7 @@ function Notifications() {
 export default function Layout({ bank }: { bank?: boolean }) {
   const { user, logout } = useAuth();
   const nav = useNavigate();
+  const loc = useLocation();
   const items = bank ? BANK_NAV : CLIENT_NAV;
   const initials = user?.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("") ?? "";
 
@@ -68,8 +72,8 @@ export default function Layout({ bank }: { bank?: boolean }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">А</div>
-          <div>Кредитный кабинет<small>{bank ? "консоль специалиста" : "для бизнеса"}</small></div>
+          <div className="brand-mark">{t("А")}</div>
+          <div>{t("Кредитный кабинет")}<small>{bank ? t("консоль специалиста") : t("для бизнеса")}</small></div>
         </div>
         {items.map((i) => (
           <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
@@ -77,20 +81,22 @@ export default function Layout({ bank }: { bank?: boolean }) {
           </NavLink>
         ))}
         <div className="sidebar-foot">
-          {bank ? "Демо-консоль андеррайтера. Данные синтетические." : "Прототип для хакатона. Все данные и условия — синтетические."}
+          {bank ? t("Демо-консоль андеррайтера. Данные синтетические.") : t("Прототип для хакатона. Все данные и условия — синтетические.")}
         </div>
       </aside>
       <div className="main">
         <header className="topbar">
           <div className="hello">
-            Здравствуйте, {user?.full_name.split(" ")[0]}!
+            
+            {t("Здравствуйте,")} {user?.full_name.split(" ")[0]}!
             <small>{bank ? user?.position : user?.company?.name}</small>
           </div>
           <div className="row">
+            <LangSwitch />
             <Notifications />
             <div className="user-chip">
               <div className="avatar">{initials}</div>
-              <button className="btn ghost sm" onClick={() => { logout(); nav("/login"); }}>Выйти</button>
+              <button className="btn ghost sm" onClick={() => { logout(); nav("/login"); }}>{t("Выйти")}</button>
             </div>
           </div>
         </header>
@@ -98,7 +104,7 @@ export default function Layout({ bank }: { bank?: boolean }) {
           <Outlet />
         </main>
       </div>
-      {!bank && <Chat />}
+      {!bank && loc.pathname !== "/talk" && <Chat />}
     </div>
   );
 }

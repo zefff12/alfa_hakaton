@@ -63,6 +63,14 @@ def provided_doc_types(app: Application) -> set[str]:
     return {d.doc_type for d in app.documents if d.status != "REJECTED"}
 
 
+def latest_statement(app: Application) -> dict | None:
+    """Последняя успешно разобранная выписка по заявке."""
+    for d in reversed(app.documents):
+        if d.analysis and d.analysis.status == "PARSED" and d.status != "REJECTED":
+            return {**d.analysis.data, "document_id": d.id, "filename": d.filename}
+    return None
+
+
 def business_age_months(registered_at: str | None) -> int:
     if not registered_at:
         return 0
@@ -159,9 +167,17 @@ def build_scoring_input(app: Application) -> ScoringInput:
     rate_guess = product.base_rate + 1.5
     new_payment = calculator.summary(app.amount, rate_guess, app.term_months, product.revolving)["monthly_payment"]
     existing = max(float(fd.get("existing_payments") or 0), float(bki.get("total_monthly_payments") or 0))
+    declared = float(fd.get("monthly_revenue") or 0)
+    stmt = latest_statement(app)
+    revenue, confirmed = declared, "bank_statement" in provided_doc_types(app)
+    if stmt and stmt.get("avg_monthly_inflow"):
+        # Выписка разобрана: подтверждаем обороты фактом, при завышении — считаем по выписке (консервативно)
+        confirmed = True
+        if stmt["avg_monthly_inflow"] < declared * 0.85:
+            revenue = float(stmt["avg_monthly_inflow"])
     return ScoringInput(
         business_age_months=business_age_months(egrul.get("registered_at") or app.company.registered_at),
-        monthly_revenue=float(fd.get("monthly_revenue") or 0),
+        monthly_revenue=revenue,
         monthly_expenses=float(fd.get("monthly_expenses") or 0),
         existing_monthly_payments=existing,
         new_monthly_payment=new_payment,
@@ -175,7 +191,7 @@ def build_scoring_input(app: Application) -> ScoringInput:
         mass_address=bool(egrul.get("mass_address")),
         director_disqualified=bool(egrul.get("director_disqualified")),
         has_collateral=bool(app.has_collateral),
-        revenue_confirmed="bank_statement" in provided_doc_types(app),
+        revenue_confirmed=confirmed,
     )
 
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { api } from "../api";
 import type { Application } from "../types";
+import { t } from "../i18n";
 
 export default function DocUpload({ app, code, label, required, onUploaded }: {
   app: Application; code: string; label: string; required?: boolean; onUploaded: (a: Application) => void;
@@ -30,12 +31,12 @@ export default function DocUpload({ app, code, label, required, onUploaded }: {
     <div className={`upload ${docs.length ? "has" : ""}`}>
       <span style={{ fontSize: 22 }}>{docs.length ? "✅" : "📎"}</span>
       <div style={{ flex: 1, minWidth: 200 }}>
-        <b>{label}</b> {required && !docs.length && <span className="badge warn">нужен</span>}
+        <b>{label}</b> {required && !docs.length && <span className="badge warn">{t("нужен")}</span>}
         {docs.map((d) => (
           <div key={d.id} className="small muted">
-            {d.filename} · {(d.size_bytes / 1024).toFixed(0)} КБ
-            {d.status === "ACCEPTED" && <span className="badge ok" style={{ marginLeft: 6 }}>принят</span>}
-            {d.status === "REJECTED" && <span className="badge bad" style={{ marginLeft: 6 }}>отклонён — загрузите заново</span>}
+            {d.filename} · {(d.size_bytes / 1024).toFixed(0)}  {t("КБ")}
+            {d.status === "ACCEPTED" && <span className="badge ok" style={{ marginLeft: 6 }}>{t("принят")}</span>}
+            {d.status === "REJECTED" && <span className="badge bad" style={{ marginLeft: 6 }}>{t("отклонён — загрузите заново")}</span>}
           </div>
         ))}
         {error && <div className="small neg">{error}</div>}
@@ -43,7 +44,7 @@ export default function DocUpload({ app, code, label, required, onUploaded }: {
       <input ref={ref} type="file" accept=".pdf,.jpg,.jpeg,.png,.txt,.csv,.xlsx,.docx"
         onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
       <button className="btn ghost sm" disabled={busy} onClick={() => ref.current?.click()}>
-        {busy ? "Загружаю…" : docs.length ? "Заменить" : "Загрузить"}
+        {busy ? t("Загружаю…") : docs.length ? t("Заменить") : t("Загрузить")}
       </button>
     </div>
   );

@@ -210,7 +210,9 @@ def decide(
                       "pass" if amount <= limit else "warn",
                       f"Лимит {limit:,.0f} ₽ при сроке {term} мес.".replace(",", " ")))
 
-    recommendation = {"amount": min(amount, limit), "term_months": term, "rate": rate, "limit": limit}
+    recommendation = {"amount": min(amount, limit), "term_months": term, "rate": rate, "limit": limit,
+                      # «decline» — платёжеспособности не хватает даже на минимальную сумму продукта
+                      "advice": "approve" if amount <= limit else "reduce" if limit >= product.min_amount else "decline"}
 
     # --- Полномочия автоматического решения --------------------------------
     manual_reasons = []

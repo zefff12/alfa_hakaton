@@ -82,6 +82,18 @@ DEMO: dict[str, dict] = {
                 "loans": [{"bank": "Банк Г", "type": "Кредит", "balance": 900_000,
                            "monthly_payment": 95_000, "overdue_days": 45}]},
     },
+    # ЕГРЮЛ и ФНС отвечают, БКИ всегда недоступно (см. BKI_DOWN_INN)
+    BKI_DOWN_INN: {
+        "egrul": {
+            "name": "ООО «Тест Отказоустойчивость»", "full_name": "Общество с ограниченной ответственностью «Тест Отказоустойчивость»",
+            "legal_form": "ООО", "ogrn": "1187700000000", "status": "ACTIVE", "registered_at": "2018-01-15",
+            "okved": "62.01", "okved_name": "Разработка компьютерного программного обеспечения",
+            "industry": "it", "region": "Москва", "address": "г. Москва, ул. Облачная, д. 5",
+            "director": "Сбоев Сергей Сергеевич", "mass_address": False, "director_disqualified": False,
+        },
+        "fns": {"annual_revenue": 11_000_000, "tax_arrears": 0, "employees": 12, "tax_regime": "УСН"},
+        "bki": {"credit_history_months": 0, "max_delinquency_days_12m": 0, "delinquencies_12m": 0, "loans": []},
+    },
 }
 
 INDUSTRIES = [

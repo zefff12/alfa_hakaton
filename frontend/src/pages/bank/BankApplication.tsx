@@ -4,6 +4,7 @@ import { api, getToken } from "../../api";
 import { ErrorBox, FactorList, Field, Loader, MoneyInput, StatusBadge, useCatalog } from "../../components/ui";
 import { date, dateTime, money, months } from "../../format";
 import type { Application } from "../../types";
+import StatementCard from "../../components/StatementCard";
 
 function DecisionPanel({ app, onDone }: { app: Application; onDone: (a: Application) => void }) {
   const catalog = useCatalog();
@@ -30,7 +31,9 @@ function DecisionPanel({ app, onDone }: { app: Application; onDone: (a: Applicat
     <div className="card stack" style={{ border: "2px solid var(--red)" }}>
       <h3>Решение специалиста</h3>
       {rec.limit != null && (
-        <div className="alert info small">Рекомендация движка: лимит {money(rec.limit)}, ставка {rec.rate}%, сумма к одобрению {money(rec.amount)}</div>
+        rec.advice === "decline"
+          ? <div className="alert warn small">Рекомендация движка: лимита ({money(rec.limit)}) не хватает даже на минимальную сумму продукта — склоняется к отказу</div>
+          : <div className="alert info small">Рекомендация движка: лимит {money(rec.limit)}, ставка {rec.rate}%, сумма к одобрению {money(rec.amount)}</div>
       )}
       <div className="pill-tabs">
         {([["APPROVED", "Одобрить"], ["COUNTER_OFFER", "Изменить условия"], ["INFO_REQUESTED", "Запросить документы"], ["REJECTED", "Отказать"]] as const).map(([k, l]) => (
@@ -64,6 +67,27 @@ function DecisionPanel({ app, onDone }: { app: Application; onDone: (a: Applicat
   );
 }
 
+const KIND_ICON: Record<string, string> = { ok: "✅", warn: "⚠️", risk: "⛔", info: "•" };
+
+function SummaryCard({ s }: { s: any }) {
+  return (
+    <div className={`card stack summary ${s.verdict}`}>
+      <div className="row between">
+        <div className="row" style={{ gap: 10 }}>
+          <img src="/alfik/alfik-notes.png" alt="" style={{ width: 44 }} />
+          <div><h3>Резюме Альфика</h3><span className="small muted">собрано из анкеты, ЕГРЮЛ, ФНС, БКИ, выписки и скоринга</span></div>
+        </div>
+        <span className={`badge ${s.verdict === "low" ? "ok" : s.verdict === "medium" ? "warn" : "bad"}`}>{s.verdict_label}</span>
+      </div>
+      <ul className="summary-list">
+        {s.points.map((p: any, i: number) => <li key={i} className={p.kind}><span>{KIND_ICON[p.kind]}</span>{p.text}</li>)}
+      </ul>
+      {s.recommendation && <div className="alert info small">🧮 {s.recommendation}</div>}
+      {s.checks.length > 0 && <div className="small"><b>Проверить вручную:</b> {s.checks.join("; ")}.</div>}
+    </div>
+  );
+}
+
 function Compare({ app }: { app: Application }) {
   const fd = app.form_data;
   const fns = app.enrichment?.sources?.fns;
@@ -71,6 +95,8 @@ function Compare({ app }: { app: Application }) {
   const rows: [string, string, string, boolean][] = [
     ["Выручка в год", money((fd.monthly_revenue ?? 0) * 12), fns ? money(fns.annual_revenue) : "—",
       !!fns && Math.abs((fd.monthly_revenue ?? 0) * 12 - fns.annual_revenue) / fns.annual_revenue > 0.4],
+    ...(app.statement ? [["Выручка в мес. (выписка)", money(fd.monthly_revenue ?? 0), money(app.statement.avg_monthly_inflow),
+      app.statement.deviation_from_declared != null && app.statement.deviation_from_declared < -0.25] as [string, string, string, boolean]] : []),
     ["Платежи по кредитам в мес.", money(fd.existing_payments ?? 0), bki ? money(bki.total_monthly_payments) : "—",
       !!bki && bki.total_monthly_payments > (fd.existing_payments ?? 0) * 1.2],
   ];
@@ -110,6 +136,7 @@ export default function BankApplication() {
 
       <div className="grid" style={{ gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)" }}>
         <div className="stack lg">
+          {app.summary && <SummaryCard s={app.summary} />}
           <div className="card">
             <h3>Запрос клиента</h3>
             <dl className="kv mt">
@@ -123,6 +150,8 @@ export default function BankApplication() {
             <div className="sep" />
             <Compare app={app} />
           </div>
+
+          {app.statement && <StatementCard s={app.statement} declared={app.form_data.monthly_revenue} bank />}
 
           {sc && (
             <div className="card">

@@ -1,3 +1,5 @@
+import { lang, t } from "./i18n";
+
 const TOKEN_KEY = "alfa_credit_token";
 
 export function getToken(): string | null {
@@ -32,19 +34,20 @@ function parseError(status: number, body: unknown): ApiError {
   if (typeof detail === "string") return new ApiError(status, detail);
   if (Array.isArray(detail)) {
     const msgs = detail.map((d: { msg?: string; loc?: string[] }) => `${d.loc?.slice(-1)[0] ?? ""}: ${d.msg ?? ""}`);
-    return new ApiError(status, "Проверьте введённые данные", msgs);
+    return new ApiError(status, t("Проверьте введённые данные"), msgs);
   }
   if (detail && typeof detail === "object") {
     const d = detail as { message?: string; errors?: string[] };
-    return new ApiError(status, d.message ?? "Ошибка", d.errors ?? []);
+    return new ApiError(status, d.message ?? t("Ошибка"), d.errors ?? []);
   }
-  return new ApiError(status, status >= 500 ? "Сервис временно недоступен" : "Ошибка запроса");
+  return new ApiError(status, status >= 500 ? t("Сервис временно недоступен") : t("Ошибка запроса"));
 }
 
 type Opts = { method?: string; body?: unknown; form?: FormData };
 
 export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
-  const headers: Record<string, string> = {};
+  // Язык интерфейса — сервер переводит тексты кабинета клиента (каталог, статусы, Альфик)
+  const headers: Record<string, string> = { "X-Lang": lang };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   let body: BodyInit | undefined;

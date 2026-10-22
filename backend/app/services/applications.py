@@ -9,12 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.domain import calculator
+from app.domain import calculator, statement
 from app.domain.decision import build_offer
 from app.domain.products import DOCUMENT_TYPES, PURPOSES, get_product, required_documents_for
 from app.domain.state_machine import FINAL, LABELS, Actor, Status, TransitionError, allowed_targets
-from app.models import Application, Company, Document, User, utcnow
-from app.services import pipeline
+from app.models import Application, Company, Document, DocumentAnalysis, User, utcnow
+from app.services import pipeline, summary
 from app.services.alfik_texts import STAGES
 
 # Этапы, которые показываются клиенту на «таймлайне» заявки
@@ -74,7 +74,8 @@ def serialize(app: Application, *, for_bank: bool = False) -> dict:
         "loan": app.loan,
         "documents": [
             {"id": d.id, "doc_type": d.doc_type, "label": doc_label(d.doc_type), "filename": d.filename,
-             "size_bytes": d.size_bytes, "status": d.status, "created_at": _iso(d.created_at)}
+             "size_bytes": d.size_bytes, "status": d.status, "created_at": _iso(d.created_at),
+             "analysis": {"status": d.analysis.status, "error": d.analysis.error} if d.analysis else None}
             for d in app.documents
         ],
         "timeline": [
@@ -85,6 +86,7 @@ def serialize(app: Application, *, for_bank: bool = False) -> dict:
             for e in app.events
         ],
         "track": {"steps": [label for _, label in CLIENT_TRACK], "current": TRACK_OF.get(app.status, 0)},
+        "statement": latest_statement(app),
         "alfik": stage,
         "allowed_transitions": allowed_targets(app.status, actor),
         "company": {
@@ -104,6 +106,7 @@ def serialize(app: Application, *, for_bank: bool = False) -> dict:
             "enrichment": app.enrichment,
             "scoring": app.scoring,
             "applicant": {"id": app.user.id, "full_name": app.user.full_name, "position": app.user.position},
+            "summary": summary.build(app),
             "assigned_to": app.assigned_to,
         })
     return data
@@ -259,6 +262,7 @@ async def upload_document(db: Session, user: User, app: Application, doc_type: s
     if not content:
         raise HTTPException(422, "Файл пустой")
     allowed = {"application/pdf", "image/jpeg", "image/png", "text/plain", "text/csv",
+               "application/vnd.ms-excel",  # так Windows-браузеры часто отдают .csv
                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
     ctype = file.content_type or "application/octet-stream"
@@ -274,9 +278,32 @@ async def upload_document(db: Session, user: User, app: Application, doc_type: s
     db.add(doc)
     pipeline.log_event(db, app, "DOCUMENT_UPLOADED", f"Загружен документ: {doc_label(doc_type)}",
                        actor=Actor.CLIENT, actor_id=user.id, payload={"doc_type": doc_type, "sha256": digest})
+    if doc_type == "bank_statement" or content.lstrip()[:20].startswith(b"1CClientBankExchange"):
+        analyze_statement(db, app, doc, content)
     db.commit()
     db.refresh(app)
     return doc
+
+
+def analyze_statement(db: Session, app: Application, doc: Document, content: bytes) -> DocumentAnalysis:
+    """Альфик читает выписку: очищенные обороты по месяцам, сверка с анкетой и ФНС."""
+    fns = ((app.enrichment or {}).get("sources") or {}).get("fns") or {}
+    declared = (app.form_data or {}).get("monthly_revenue")
+    try:
+        data = statement.analyze(statement.parse(content, doc.filename), float(declared) if declared else None,
+                                 fns.get("annual_revenue"))
+        analysis = DocumentAnalysis(kind="bank_statement", status="PARSED", data=data)
+        msg = (f"Альфик разобрал выписку: {data['transactions']} операций, очищенные поступления "
+               f"{data['avg_monthly_inflow']:,.0f} ₽/мес за {data['months_used']} мес.").replace(",", " ")
+    except statement.StatementError as exc:
+        analysis = DocumentAnalysis(kind="bank_statement", status="FAILED", error=str(exc)[:500])
+        msg = f"Выписку не удалось разобрать автоматически ({exc}) — её проверит специалист"
+    doc.analysis = analysis
+    pipeline.log_event(db, app, "DOCUMENT_ANALYZED", msg, payload={"document_id": doc.id, "status": analysis.status})
+    return analysis
+
+
+latest_statement = pipeline.latest_statement
 
 
 def _transition(db, app, dst, actor, actor_id, message, version, payload=None):

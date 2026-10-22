@@ -5,6 +5,7 @@ import Calculator from "../components/Calculator";
 import { AlfikSay, ErrorBox, Loader, MoneyInput, useCatalog } from "../components/ui";
 import { money } from "../format";
 import type { Application } from "../types";
+import { t } from "../i18n";
 
 const STEPS = ["purpose", "amount", "term", "collateral", "urgency"] as const;
 const AMOUNTS = [300_000, 1_000_000, 3_000_000, 5_000_000, 15_000_000];
@@ -62,7 +63,7 @@ export default function Advisor() {
 
   const questions: Record<string, { q: string; body: React.ReactNode }> = {
     purpose: {
-      q: "На что бизнесу нужны деньги?",
+      q: t("На что бизнесу нужны деньги?"),
       body: (
         <div className="chips">
           {catalog.purposes.map((p) => (
@@ -72,7 +73,7 @@ export default function Advisor() {
       ),
     },
     amount: {
-      q: "Сколько примерно нужно?",
+      q: t("Сколько примерно нужно?"),
       body: (
         <div className="stack">
           <div className="chips">
@@ -80,34 +81,34 @@ export default function Advisor() {
           </div>
           <div className="row">
             <div style={{ width: 240 }}><MoneyInput value={need.amount} onChange={(v) => setNeed({ ...need, amount: v })} /></div>
-            <button className="btn dark" onClick={() => next({})}>Дальше</button>
+            <button className="btn dark" onClick={() => next({})}>{t("Дальше")}</button>
           </div>
         </div>
       ),
     },
     term: {
-      q: "На какой срок? Чем дольше — тем ниже платёж, но больше переплата.",
+      q: t("На какой срок? Чем дольше — тем ниже платёж, но больше переплата."),
       body: (
         <div className="chips">
-          {TERMS.map((t) => <button key={t} className={`chip ${need.term_months === t ? "on" : ""}`} onClick={() => next({ term_months: t })}>{t} мес.</button>)}
+          {TERMS.map((term) => <button key={term} className={`chip ${need.term_months === term ? "on" : ""}`} onClick={() => next({ term_months: term })}>{term} {t("мес.")}</button>)}
         </div>
       ),
     },
     collateral: {
-      q: "Есть ли залог — недвижимость, транспорт или оборудование (в т.ч. то, что покупаете)?",
+      q: t("Есть ли залог — недвижимость, транспорт или оборудование (в т.ч. то, что покупаете)?"),
       body: (
         <div className="chips">
-          <button className="chip" onClick={() => next({ has_collateral: true })}>Да, есть</button>
-          <button className="chip" onClick={() => next({ has_collateral: false })}>Нет залога</button>
+          <button className="chip" onClick={() => next({ has_collateral: true })}>{t("Да, есть")}</button>
+          <button className="chip" onClick={() => next({ has_collateral: false })}>{t("Нет залога")}</button>
         </div>
       ),
     },
     urgency: {
-      q: "Насколько срочно нужны деньги?",
+      q: t("Насколько срочно нужны деньги?"),
       body: (
         <div className="chips">
-          <button className="chip" onClick={() => next({ urgency: "urgent" })}>Срочно, в течение дня</button>
-          <button className="chip" onClick={() => next({ urgency: "normal" })}>Могу подождать пару дней</button>
+          <button className="chip" onClick={() => next({ urgency: "urgent" })}>{t("Срочно, в течение дня")}</button>
+          <button className="chip" onClick={() => next({ urgency: "normal" })}>{t("Могу подождать пару дней")}</button>
         </div>
       ),
     },
@@ -117,10 +118,10 @@ export default function Advisor() {
     <div className="stack lg">
       <div className="page-head">
         <div>
-          <h1>Подбор кредита</h1>
-          <p>Альфик задаст 5 вопросов и объяснит, какой продукт подходит и почему</p>
+          <h1>{t("Подбор кредита")}</h1>
+          <p>{t("Альфик задаст 5 вопросов и объяснит, какой продукт подходит и почему")}</p>
         </div>
-        {result && <button className="btn ghost" onClick={() => { setResult(null); setStep(0); }}>Начать заново</button>}
+        {result && <button className="btn ghost" onClick={() => { setResult(null); setStep(0); }}>{t("Начать заново")}</button>}
       </div>
 
       {!result && (
@@ -128,7 +129,7 @@ export default function Advisor() {
           <div className="wizard-steps">
             {STEPS.map((s, i) => (
               <button key={s} className={i === step ? "on" : i < step ? "done" : ""} onClick={() => i < step && setStep(i)}>
-                {i + 1}. {["Цель", "Сумма", "Срок", "Залог", "Срочность"][i]}
+                {i + 1}. {[t("Цель"), t("Сумма"), t("Срок"), t("Залог"), t("Срочность")][i]}
               </button>
             ))}
           </div>
@@ -150,12 +151,12 @@ export default function Advisor() {
                 }}>
                 <div className="row between">
                   <b>{it.product.name}</b>
-                  {result.best === it.product.code && <span className="badge red">Лучший выбор</span>}
+                  {result.best === it.product.code && <span className="badge red">{t("Лучший выбор")}</span>}
                 </div>
-                <small>{it.product.short} · от {it.product.base_rate}% · {it.product.decision_time}</small>
+                <small>{it.product.short}  {t("· от")} {it.product.base_rate}% · {it.product.decision_time}</small>
                 <div className="row mt" style={{ gap: 8 }}>
                   <div className="fit-bar" style={{ flex: 1 }}><div style={{ width: `${it.fit_score}%` }} /></div>
-                  <span className="small"><b>{it.fit_score}%</b> совпадение</span>
+                  <span className="small"><b>{it.fit_score}%</b>  {t("совпадение")}</span>
                 </div>
                 <div className="small mt" style={{ lineHeight: 1.6 }}>
                   {it.pros.map((p: string) => <div key={p} className="pos">✓ {p}</div>)}
@@ -184,12 +185,13 @@ export default function Advisor() {
             onChange={(amount, term) => setCalc({ amount, term })} />
           <ErrorBox error={error} />
           <div className="row">
-            <button className="btn primary" onClick={apply}>Оформить заявку на {money(calc.amount)}</button>
+            <button className="btn primary" onClick={apply}>{t("Оформить заявку на")} {money(calc.amount)}</button>
             <button className="btn ghost" onClick={() => nav(`/precheck?product=${product.code}&amount=${calc.amount}&term=${calc.term}`)}>
-              Сначала узнать шансы
+              
+              {t("Сначала узнать шансы")}
             </button>
           </div>
-          <p className="small muted">Расчёт предварительный: итоговая ставка зависит от оценки банка. Условия в прототипе синтетические.</p>
+          <p className="small muted">{t("Расчёт предварительный: итоговая ставка зависит от оценки банка. Условия в прототипе синтетические.")}</p>
         </div>
       )}
     </div>

@@ -142,11 +142,13 @@ export interface Application {
   updated_at: string;
   submitted_at: string | null;
   decided_at: string | null;
+  statement: any | null;
   // только в консоли банка
   data_check?: any;
   enrichment?: any;
   scoring?: any;
   applicant?: { id: number; full_name: string; position: string | null };
+  summary?: any;
 }
 
 export interface ChatMsg {
@@ -154,7 +156,7 @@ export interface ChatMsg {
   role: "user" | "assistant";
   content: string;
   source: string | null;
-  meta: { actions?: { label: string; to: string }[] } | null;
+  meta: { actions?: { label: string; to: string; prefill?: string }[] } | null;
   created_at: string;
 }
 
