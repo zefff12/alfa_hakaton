@@ -24,7 +24,7 @@ export default function Products() {
         {catalog.products.map((p) => (
           <div key={p.code} className="fav-card">
             <div className="row nowrap">
-              <div className="sc-icon" style={{ width: 52, height: 52 }}><img src={productIcon(p.code)} alt="" style={{ width: 44, height: 44 }} /></div>
+              <div className="sc-icon" style={{ width: 52, height: 52 }}><img src={productIcon(p.code)} alt="" /></div>
               <div><h3 style={{ paddingRight: 0 }}>{p.name}</h3><div className="sub">{p.short}</div></div>
             </div>
             <div className="art"><img src={productArt(p.code)} alt="" /></div>

@@ -62,7 +62,7 @@ export default function OfferDetail() {
       <div className="detail-hero">
         <button className="crumb" onClick={() => nav(-1)}><ArrowLeft size={18} />{t("К списку предложений")}</button>
         <div className="row nowrap" style={{ gap: 18, alignItems: "flex-start" }}>
-          <div className="sc-icon" style={{ width: 76, height: 76 }}><img src={productIcon(o.code)} alt="" style={{ width: 66, height: 66 }} /></div>
+          <div className="sc-icon" style={{ width: 76, height: 76 }}><img src={productIcon(o.code)} alt="" /></div>
           <div>
             <h1>{o.name}</h1>
             <p className="text-2" style={{ fontSize: 18, marginTop: 6 }}>{o.description}</p>

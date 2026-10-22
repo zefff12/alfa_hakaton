@@ -322,7 +322,7 @@ export default function Match() {
 function SideMini({ o }: { o: MatchOffer }) {
   return (
     <div className="stack" style={{ gap: 10, height: "100%" }}>
-      <div className="row nowrap"><div className="sc-icon" style={{ width: 48, height: 48 }}><img src={productIcon(o.code)} alt="" style={{ width: 40, height: 40 }} /></div><b>{o.name}</b></div>
+      <div className="row nowrap"><div className="sc-icon" style={{ width: 48, height: 48 }}><img src={productIcon(o.code)} alt="" /></div><b>{o.name}</b></div>
       <div className="tile"><div className="small muted">{t("Сумма кредита")}</div><b style={{ fontSize: 20 }}>{money(o.amount)}</b></div>
       <div className="tile"><div className="small muted">{t("Срок")}</div><b>{months(o.term_months)}</b></div>
       <div className="tile"><div className="small muted">{t("Платёж от")}</div><b className="cyan">{money(o.monthly_payment)}</b></div>

@@ -171,7 +171,7 @@ export default function Favorites() {
             <div key={o.code} className="fav-card">
               <button className="heart" aria-label={t("Убрать из избранного")} onClick={() => act(`/api/favorites/${o.code}`, "DELETE")}><Heart size={20} fill="currentColor" /></button>
               <div className="row nowrap">
-                <div className="sc-icon" style={{ width: 52, height: 52 }}><img src={productIcon(o.code)} alt="" style={{ width: 44, height: 44 }} /></div>
+                <div className="sc-icon" style={{ width: 52, height: 52 }}><img src={productIcon(o.code)} alt="" /></div>
                 <div><h3>{o.name}</h3><div className="sub">{o.short}</div></div>
               </div>
               {o.recommended && <span className="badge rec" style={{ alignSelf: "flex-start" }}>{t("Рекомендуем")}</span>}
