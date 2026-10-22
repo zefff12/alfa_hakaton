@@ -53,8 +53,10 @@ function DocRow({ app, code, label, required, checkStatus, onUploaded }: {
         <b>{label}</b> {required && !last && <span className="badge warn">{t("нужен")}</span>}
         {last ? (
           <div className={`sub ${bad ? "bad" : "ok"}`}>
-            {isStatement && !bad ? t("Загружено: {0} поступлений в месяц", money(app.statement.avg_monthly_inflow)) : `${last.filename} · ${dateTime(last.created_at)}`}
-            {bad && ` — ${t("есть ошибка, загрузите другой файл")}`}
+            {isStatement && !bad
+              ? t("Загружено: {0} поступлений в месяц", money(app.statement.avg_monthly_inflow))
+              : <span className="file" title={last.filename}>{last.filename} · {dateTime(last.created_at)}</span>}
+            {bad && t("есть ошибка, загрузите другой файл")}
           </div>
         ) : (
           <div className="sub">{required ? t("Загрузите документ") : t("По желанию — ускорит рассмотрение")}</div>

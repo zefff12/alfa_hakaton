@@ -32,7 +32,10 @@ export default function Products() {
             <div className="fav-row"><Wallet size={20} /><div><div className="l">{t("Сумма")}</div><div className="v">{money(p.min_amount)} — {money(p.max_amount)}</div></div></div>
             <div className="fav-row"><Calendar size={20} /><div><div className="l">{t("Срок")}</div><div className="v">{t("до {0}", months(p.max_term))}</div></div></div>
             <div className="fav-row"><BadgePercent size={20} /><div><div className="l">{t("Ставка")}</div><div className="v cyan">{t("от {0}%", p.base_rate)}</div></div></div>
-            <div className="row small text-2"><Clock size={16} />{p.decision_time} · <Shield size={16} />{COLLATERAL[p.collateral]}</div>
+            <div className="row small text-2" style={{ gap: 16 }}>
+              <span className="row nowrap" style={{ gap: 6 }}><Clock size={16} />{p.decision_time}</span>
+              <span className="row nowrap" style={{ gap: 6 }}><Shield size={16} />{COLLATERAL[p.collateral]}</span>
+            </div>
             <div className="spacer" />
             <div className="two">
               <button className="btn primary sm" onClick={() => nav(`/offers/${p.code}`)}><Info size={16} />{t("Подробнее")}</button>

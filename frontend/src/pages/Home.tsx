@@ -79,8 +79,7 @@ export default function Home() {
                 <tr key={a.id} className="click" onClick={() => nav(`/applications/${a.id}`)}>
                   <td style={{ width: 52 }}>{a.product_code && <img src={productIcon(a.product_code)} alt="" style={{ width: 40, height: 40, objectFit: "contain" }} />}</td>
                   <td><b>{a.product_name ?? t("Продукт не выбран")}</b><div className="small muted">{a.number} · {dateTime(a.created_at)}</div></td>
-                  <td><b>{money(a.amount)}</b></td>
-                  <td className="muted">{months(a.term_months)}</td>
+                  <td style={{ whiteSpace: "nowrap" }}><b>{money(a.amount)}</b><div className="small muted">{months(a.term_months)}</div></td>
                   <td><StatusBadge status={a.status} label={a.status_label} /></td>
                   <td><ChevronRight size={18} className="muted" /></td>
                 </tr>
