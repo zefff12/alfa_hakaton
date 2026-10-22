@@ -3,13 +3,15 @@ import asyncio
 import contextlib
 import json
 import logging
+import mimetypes
+import os
 import threading
 import time
 import uuid
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from sqlalchemy import text
 
 from app import db as dbm
@@ -131,3 +133,22 @@ def ready():
 app.include_router(auth.router)
 app.include_router(client.router)
 app.include_router(bank.router)
+
+STATIC_DIR = get_settings().static_dir
+if STATIC_DIR:
+    # Публичное демо одним контейнером: те же файлы, что раздаёт nginx в docker compose.
+    # Неизвестный путь отдаёт index.html — маршрутизацию страниц делает React Router.
+    root = os.path.realpath(STATIC_DIR)
+    # в slim-образах системный список типов неполный
+    for ext, mime in ((".webp", "image/webp"), (".woff2", "font/woff2"), (".js", "text/javascript")):
+        mimetypes.add_type(mime, ext)
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str):
+        if path.startswith(("api/", "health/")):
+            return JSONResponse({"detail": "Not Found"}, status_code=404)
+        file = os.path.realpath(os.path.join(root, path))
+        if path and file.startswith(root + os.sep) and os.path.isfile(file):
+            cache = "public, max-age=2592000, immutable" if path.startswith("assets/") else "no-cache"
+            return FileResponse(file, headers={"Cache-Control": cache})
+        return FileResponse(os.path.join(root, "index.html"), headers={"Cache-Control": "no-cache"})

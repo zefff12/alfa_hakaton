@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     max_upload_mb: int = 10
     cors_origins: str = "http://localhost:5173,http://localhost:8080"
     seed_demo_data: bool = True
+    # Однокомпонентный запуск (публичное демо): API сам отдаёт собранный фронтенд из этой папки
+    static_dir: str | None = None
 
 
 @lru_cache

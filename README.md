@@ -69,6 +69,16 @@ LLM_ENABLED=true docker compose --profile llm up --build
 
 Масштабирование воркеров конвейера: `docker compose up --scale worker=3`.
 
+## Публичное демо (Hugging Face Spaces)
+
+Для показа без установки весь кабинет собирается в один контейнер: [`deploy/huggingface`](deploy/huggingface).
+Space содержит только `Dockerfile` и `README.md` оттуда; при сборке код берётся из этого репозитория,
+фронтенд раздаёт сам API (`STATIC_DIR`), обработчик заявок работает внутри API, моки ЕГРЮЛ/ФНС/БКИ —
+в том же контейнере, база — SQLite (демо-данные создаются заново при каждом запуске).
+Обновить демо после пуша в GitHub — **Settings → Factory rebuild** в Space.
+
+Проверить образ локально: `docker build -t alfa-demo deploy/huggingface && docker run -p 7860:7860 alfa-demo` → http://localhost:7860
+
 ## Запуск без Docker (для разработки)
 
 Требования: Python 3.12+ и [uv](https://docs.astral.sh/uv/), Node.js 22.12+.
