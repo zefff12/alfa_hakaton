@@ -105,7 +105,7 @@ export function Gauge({ value, label }: { value: number; label?: string }) {
   return (
     <div className="gauge">
       <svg viewBox="0 0 220 130">
-        <path d="M20 115 A90 90 0 0 1 200 115" fill="none" stroke="#eef0f3" strokeWidth="18" strokeLinecap="round" />
+        <path d="M20 115 A90 90 0 0 1 200 115" fill="none" stroke="var(--track)" strokeWidth="18" strokeLinecap="round" />
         <path d={`M20 115 A90 90 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}`} fill="none" stroke={color} strokeWidth="18" strokeLinecap="round" />
       </svg>
       <div className="val">{value}<small>{label ?? t("из 100")}</small></div>

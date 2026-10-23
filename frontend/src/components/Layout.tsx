@@ -10,6 +10,7 @@ import { dateTime, money } from "../format";
 import Chat, { openAlfik } from "./Chat";
 import { t } from "../i18n";
 import LangSwitch from "./LangSwitch";
+import ThemeToggle from "./ThemeToggle";
 import { useCatalog } from "./ui";
 
 interface NavItem { to: string; label: string; icon: LucideIcon; end?: boolean; badge?: "notifications" | "favorites" }
@@ -238,7 +239,7 @@ export default function Layout({ bank }: { bank?: boolean }) {
           <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
             <i.icon size={21} strokeWidth={1.7} />{i.label}
             {i.badge === "notifications" && n.unread > 0 && <span className="nav-badge">{n.unread}</span>}
-            {i.badge === "favorites" && favCount > 0 && <span className="nav-badge" style={{ background: "rgba(47,211,255,.25)", boxShadow: "none" }}>{favCount}</span>}
+            {i.badge === "favorites" && favCount > 0 && <span className="nav-badge soft">{favCount}</span>}
           </NavLink>
         ))}
         <div className="spacer" />
@@ -265,6 +266,7 @@ export default function Layout({ bank }: { bank?: boolean }) {
           <GlobalSearch bank={bank} />
           <div className="spacer" />
           <LangSwitch />
+          <ThemeToggle />
           <Bellmenu n={n} bank={bank} />
           <UserMenu bank={bank}>
             <button className="user-chip">

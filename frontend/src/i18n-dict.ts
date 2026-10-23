@@ -623,6 +623,9 @@ const DICT: Record<string, [string, string]> = {
   "Проверка документов и анкеты на ошибки": ["Checking documents and the form for errors", "检查文件和表单中的错误"],
   "Безопасность": ["Security", "安全"],
   "Данные синтетические, договор подписывается кодом в кабинете": ["Data is synthetic; the contract is signed with a code in the cabinet", "数据为合成数据，合同在办公室中用验证码签署"],
+  // Тема оформления
+  "Светлая тема": ["Light theme", "浅色主题"],
+  "Тёмная тема": ["Dark theme", "深色主题"],
 };
 
 export default DICT;

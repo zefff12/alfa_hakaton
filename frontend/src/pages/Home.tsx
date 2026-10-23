@@ -44,7 +44,7 @@ export default function Home() {
           {focus && <button className="btn ghost mt" onClick={() => nav(`/applications/${focus.id}`)}>{t("Открыть заявку")}<ChevronRight size={18} /></button>}
         </div>
         <img src="/brand/alfik-jump.webp" alt={t("Альфик")} className="bob" style={{ width: 230 }} />
-        <div className="card" style={{ background: "rgba(5,8,16,.88)" }}>
+        <div className="card hero-cta">
           <h3 style={{ fontSize: 20 }}>{t("Подберите финансирование под ваши цели")}</h3>
           <p className="text-2 small" style={{ marginTop: 8 }}>{t("Получите персональные условия за 2 минуты")}</p>
           <button className="btn primary block mt" onClick={() => nav("/match")}>{t("Подобрать кредит")}</button>

@@ -5,6 +5,7 @@ import { useAuth } from "../auth";
 import { ErrorBox, Field } from "../components/ui";
 import { t } from "../i18n";
 import LangSwitch from "../components/LangSwitch";
+import ThemeToggle from "../components/ThemeToggle";
 
 interface Demo { login: string; password: string; role: string; full_name: string; company: string | null; hint: string | null }
 
@@ -47,7 +48,7 @@ export default function Login() {
           <button className={mode === "login" ? "on" : ""} onClick={() => setMode("login")}>{t("Вход")}</button>
           <button className={mode === "register" ? "on" : ""} onClick={() => setMode("register")}>{t("Новый клиент")}</button>
         </div>
-        <LangSwitch />
+        <div className="row nowrap"><LangSwitch /><ThemeToggle /></div>
         </div>
         <ErrorBox error={error} />
 
